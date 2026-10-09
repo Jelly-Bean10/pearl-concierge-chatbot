@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Pearl Club-inspired tokens. Light theme only (Pearl Club itself is light only). */
+@theme {
+  --color-paper: #ffffff;
+  --color-mist: #f2f2f2;
+  --color-ink: #121113;
+  --color-ink-soft: #3f3f46;
+  --color-muted: #71717a;
+  --color-line: #e4e4e7;
+  --color-accent-blue: #645cff;
+  --color-accent-red: #ff4d4f;
+  --color-accent-gold: #f5b429;
+  --color-danger: #b42318;
+  --color-danger-bg: #fef3f2;
+
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-sans: var(--font-karla), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility pearl-gradient {
+  background: linear-gradient(90deg, var(--color-accent-blue), var(--color-accent-red));
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes pearl-pulse {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
 }
