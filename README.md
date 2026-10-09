@@ -1,6 +1,6 @@
 # Ask Pearl · Pearl Club travel concierge (MVP)
 
-**Live demo:** _added at handoff (task T14)_
+**Live demo:** https://pearl-concierge.vercel.app
 
 A mobile-first chat assistant that recommends places hand-picked by Pearl Club's local curators. Pick a city, ask for anything from hidden gems to dinner tonight, and Pearl answers in a few sentences with cards for real Pearl Club places, each linking to its pearlclub.com page. It never invents a place: answers are grounded in 1,785 places scraped from pearlclub.com (with the founder's permission) for New York City, London, Paris, and Los Angeles.
 
@@ -61,7 +61,7 @@ npm run eval
 
 ## Deploy
 
-Import the repo into Vercel, set `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` for Production and Preview, and deploy `main`. Share the production domain (`https://<project>.vercel.app`), which is public; deployment-specific URLs are behind Vercel login by default. Details in [`docs/10-DEPLOYMENT.md`](docs/10-DEPLOYMENT.md).
+Import the repo into Vercel, set `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY` (publishable) for Production and Preview, and deploy `main`. Share the production domain (`https://<project>.vercel.app`), which is public; deployment-specific URLs are behind Vercel login by default. Details in [`docs/10-DEPLOYMENT.md`](docs/10-DEPLOYMENT.md).
 
 ## Scope
 

@@ -13,8 +13,11 @@ OPENAI_API_KEY=
 # Supabase project URL (Project Settings > API), e.g. https://abcdefghijkl.supabase.co
 SUPABASE_URL=
 
-# Supabase secret key (Project Settings > API Keys > Secret keys, starts with sb_secret_).
-# The legacy service_role key also works. Bypasses RLS: server and loader only.
+# Supabase publishable key (Project Settings > API Keys, starts with sb_publishable_). Used by the app.
+# Safe by design: the table has RLS with no policies and the app only calls the read-only match_places().
+SUPABASE_KEY=
+
+# Supabase secret key (starts with sb_secret_). ONLY for scraper/load.py. Not needed by the app or Vercel.
 SUPABASE_SECRET_KEY=
 
 # Optional. Chat model for the planner and answers. Defaults to gpt-4.1-mini.
@@ -25,7 +28,8 @@ OPENAI_CHAT_MODEL=
 |---|---|---|---|
 | `OPENAI_API_KEY` | yes | app, `load.py` | Use a dedicated OpenAI project with a budget limit (section 4). |
 | `SUPABASE_URL` | yes | app, `load.py` | |
-| `SUPABASE_SECRET_KEY` | yes | app, `load.py` | Never expose to the browser. |
+| `SUPABASE_KEY` | yes | app | Publishable key. |
+| `SUPABASE_SECRET_KEY` | loader only | `load.py` | Never expose to the browser; not set on Vercel. |
 | `OPENAI_CHAT_MODEL` | no | app | Leave empty. Only if `gpt-4.1-mini` is ever retired: set `gpt-5-mini`, delete the two `temperature` lines (`planner.ts`, `route.ts`; GPT-5 models reject them), and add `reasoning_effort: "minimal"` to both `create` calls so reasoning does not eat the token budget. |
 
 Locally, copy `.env.example` to `.env.local` and fill it. `load.py` reads the same `.env.local`.
@@ -62,7 +66,7 @@ In platform.openai.com: create a project `pearl-concierge`, create the API key i
 
 1. Push the repo to GitHub (private is fine).
 2. vercel.com > Add New > Project > import the repo. Framework preset: Next.js (auto-detected). Root directory: `./`. Build command, output, and install command: leave as defaults.
-3. Environment Variables: add `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY` for **Production** and **Preview**. Leave `OPENAI_CHAT_MODEL` unset.
+3. Environment Variables: add `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY` for **Production** and **Preview**. Leave `OPENAI_CHAT_MODEL` unset.
 4. Deploy. Function region stays the default (`iad1`, Washington D.C.), next to the Supabase region chosen above. No `vercel.json` is needed; `maxDuration = 60` is set in the route file.
 5. Production branch: `main` (Settings > Git). Merging the feature branch into `main` triggers the production deploy.
 6. **Share the production domain, not a deployment URL.** Vercel's default Deployment Protection requires a Vercel login for preview and per-deployment URLs (`<project>-<hash>-<team>.vercel.app`). The production domain `https://<project>.vercel.app` is public. Verify it in a private browser window: it must load without any login prompt. If it asks to log in, go to Settings > Deployment Protection and make sure protection applies to previews only, not production.

@@ -240,9 +240,9 @@ export function getOpenAI(): OpenAI {
   return openaiClient;
 }
 
-// Secret key: server only, bypasses RLS. Never import this file from a client component.
+// Publishable key is enough: the app only calls the read-only match_places() function. Server only.
 export function getSupabase(): SupabaseClient {
-  supabaseClient ??= createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SECRET_KEY"), {
+  supabaseClient ??= createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_KEY"), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return supabaseClient;
