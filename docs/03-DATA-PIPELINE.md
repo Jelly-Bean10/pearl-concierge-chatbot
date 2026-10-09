@@ -161,7 +161,7 @@ Design notes:
 
 - `url` is unique and is the upsert key.
 - No vector index (exact scan of ~1,800 rows takes milliseconds and never drops filtered matches).
-- RLS is enabled with no policies, so the anon/publishable key can read nothing. The app and loader use the secret key, which maps to `service_role` and bypasses RLS.
+- RLS is enabled with no policies, so the table cannot be read or written through the API. The app reads only through `match_places()`, a `security definer` function callable with the publishable key (read-only, 20 rows max, public data). Writes need a service key and happen only in `load.py`.
 - `match_places` is `stable`, pins `search_path` (so `<=>` resolves to pgvector in the `extensions` schema), caps `match_count` at 20, and is executable only by `service_role`.
 - Price filter keeps places with unknown price.
 
@@ -207,7 +207,8 @@ create index if not exists places_city_category_idx on public.places (city_slug,
 -- approximate index (HNSW/IVFFlat) combined with WHERE filters can silently drop matches.
 -- Add `using hnsw (embedding extensions.vector_cosine_ops)` only past ~50k rows.
 
--- RLS on with no policies: only the server's secret key (which bypasses RLS) can read or write.
+-- RLS on with no policies: nobody can read or write the table directly through the API.
+-- Reads happen only through match_places() below (security definer); writes only with a service key.
 alter table public.places enable row level security;
 
 create or replace function public.match_places(
@@ -240,6 +241,7 @@ returns table (
 )
 language sql
 stable
+security definer
 set search_path = public, extensions
 as $$
   select
@@ -257,9 +259,10 @@ as $$
   limit least(match_count, 20);
 $$;
 
--- Only the server (service role / secret key) may call it.
-revoke execute on function public.match_places(extensions.vector, int, text, text[], int, bigint[]) from public, anon, authenticated;
-grant execute on function public.match_places(extensions.vector, int, text, text[], int, bigint[]) to service_role;
+-- Callable with the publishable (anon) key: it is read-only, returns at most 20 rows, and the data is
+-- already public on pearlclub.com. No write path exists for anon.
+revoke execute on function public.match_places(extensions.vector, int, text, text[], int, bigint[]) from public;
+grant execute on function public.match_places(extensions.vector, int, text, text[], int, bigint[]) to anon, authenticated, service_role;
 ```
 
 ## 7. Idempotency

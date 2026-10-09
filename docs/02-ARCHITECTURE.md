@@ -47,7 +47,7 @@
 | JSON-LD extraction instead of DOM parsing | Place pages carry complete schema.org JSON-LD; it is stable and far simpler than CSS selectors. DOM is used only for tags, which JSON-LD lacks. |
 | Supabase Postgres + pgvector | Founder's stack; filters (city, category, price) and vector search in one SQL query. |
 | No vector index | ~1,800 rows is an exact scan in milliseconds; approximate indexes plus WHERE filters can silently drop matches. |
-| RLS on, no policies, secret key on the server only | Nothing is exposed to the browser; the anon key is never used. |
+| RLS on, no policies; reads only through a read-only `security definer` function | The table is unreachable through the API. The app calls `match_places()` (max 20 rows, public data) with the publishable key; only the one-time loader writes, with a service key. |
 | OpenAI `text-embedding-3-small` (1536 dims) | Cheap (the whole corpus costs about $0.02 to embed), good quality, not deprecated. |
 | OpenAI `gpt-4.1-mini` via Chat Completions | Fast first token, supports strict JSON-schema output and streaming, not deprecated. Overridable with `OPENAI_CHAT_MODEL`. |
 | Official `openai` npm SDK, no AI SDK or LangChain | Three explicit calls are easier to read and debug than a framework; avoids version-churn APIs. |

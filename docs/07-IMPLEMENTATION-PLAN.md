@@ -14,7 +14,7 @@ Global rules for every task:
 
 ### T01 · Repo and scaffold (15 min)
 
-The repo root already contains `docs/` and `README.md`. `create-next-app` refuses to run when `README.md` exists, so move it aside first.
+The repo root already contains `docs/` and `README.md`. `create-next-app` refuses to run when any `README*` file exists in the directory, so move it outside the repo first.
 
 ```bash
 git init -b main
@@ -29,7 +29,7 @@ git checkout -b feat/pearl-concierge-mvp
 ```
 
 ```bash
-mv README.md README.keep.md
+mv README.md ../README.keep.md
 ```
 
 ```bash
@@ -37,7 +37,7 @@ npx create-next-app@16.4.0 . --ts --tailwind --eslint --app --src-dir --import-a
 ```
 
 ```bash
-mv README.keep.md README.md
+mv ../README.keep.md README.md
 ```
 
 ```bash
