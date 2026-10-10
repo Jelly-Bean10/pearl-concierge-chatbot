@@ -3,7 +3,17 @@ import type { PlaceCard as Place } from "@/lib/types";
 
 const external = { target: "_blank", rel: "noopener noreferrer" } as const;
 
-export default function PlaceCard({ place, domId, t }: { place: Place; domId: string; t: Dict }) {
+export default function PlaceCard({
+  place,
+  domId,
+  t,
+  onRequest,
+}: {
+  place: Place;
+  domId: string;
+  t: Dict;
+  onRequest?: () => void;
+}) {
   return (
     <article
       id={domId}
@@ -56,6 +66,14 @@ export default function PlaceCard({ place, domId, t }: { place: Place; domId: st
           >
             {t.viewOnPearl} →
           </a>
+          <button
+            type="button"
+            onClick={onRequest}
+            disabled={!onRequest}
+            className="flex h-10 items-center justify-center rounded-md border border-ink font-mono text-xs uppercase tracking-[0.08em] text-ink transition-colors hover:bg-mist disabled:opacity-50"
+          >
+            {t.requestThis}
+          </button>
           {(place.websiteUrl || place.mapUrl) && (
             <div className="flex justify-center gap-5 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
               {place.websiteUrl && (

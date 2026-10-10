@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { citedRefs } from "@/lib/citations";
 import { CHAT_MODEL, getOpenAI } from "@/lib/clients";
+import { findNamedPlace } from "@/lib/match-place";
 import { planTurn } from "@/lib/planner";
 import { buildContext, SYSTEM_PROMPT } from "@/lib/prompt";
 import { allowRequest, clientIp } from "@/lib/rate-limit";
@@ -60,11 +61,34 @@ export async function POST(req: Request): Promise<Response> {
         const plan = await planTurn(messages, city);
         send({ type: "meta", intent: plan.intent, city: plan.city });
 
-        // 2. Retrieve candidates. Only "recommend" with a known city searches.
-        const rows =
-          plan.intent === "recommend" ? await retrievePlaces(plan, plan.wantsNewOptions ? shownPlaceIds : []) : [];
+        // 2. Retrieve candidates. Only "recommend" and "request_venue" with a known city search.
+        // A named venue is searched by its name, without category or price filters.
+        const searchesPlaces = plan.intent === "recommend" || plan.intent === "request_venue";
+        const searchPlan =
+          plan.intent === "request_venue" && plan.placeName
+            ? { ...plan, searchQuery: plan.placeName, categories: [], maxPriceLevel: null }
+            : plan;
+        const rows = searchesPlaces ? await retrievePlaces(searchPlan, plan.wantsNewOptions ? shownPlaceIds : []) : [];
         const cards = rows.map((row, i) => toCard(row, i + 1));
         send({ type: "places", places: cards });
+
+        // 2b. Booking intent: open the request form. A named venue must exist in the corpus to be requested.
+        const matched = plan.intent === "request_venue" && plan.placeName ? findNamedPlace(rows, plan.placeName) : null;
+        const matchedRef = matched ? rows.indexOf(matched) + 1 : null;
+        if (matched || plan.intent === "request_hotel") {
+          send({
+            type: "request",
+            prefill: {
+              kind: matched ? "venue" : "hotel",
+              placeRef: matchedRef,
+              serviceType: plan.serviceType,
+              city: plan.city,
+              date: plan.requestDate,
+              time: plan.requestTime,
+              partySize: plan.partySize,
+            },
+          });
+        }
 
         // 3. Stream the answer, grounded in exactly those candidates.
         const completion = await getOpenAI().chat.completions.create(
@@ -75,7 +99,7 @@ export async function POST(req: Request): Promise<Response> {
             max_completion_tokens: 500,
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
-              { role: "system", content: buildContext(plan, rows, lang) },
+              { role: "system", content: buildContext(plan, rows, lang, matched) },
               ...messages.slice(-10),
             ],
           },
@@ -92,6 +116,7 @@ export async function POST(req: Request): Promise<Response> {
 
         // 4. Report which candidates were actually cited, plus follow-up chips.
         const refs = citedRefs(fullText, cards.length);
+        if (matchedRef && !refs.includes(matchedRef)) refs.unshift(matchedRef); // the form's place card always shows
         const cited = refs.map((ref) => cards[ref - 1]);
         send({ type: "done", citedRefs: refs, suggestions: buildSuggestions(plan, cited, lang) });
         console.log(

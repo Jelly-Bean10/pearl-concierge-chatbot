@@ -1,7 +1,9 @@
 import { toSegments } from "@/lib/citations";
 import type { Dict } from "@/lib/i18n";
+import type { PlaceCard as Place } from "@/lib/types";
 import type { UIMessage } from "./Chat";
 import PlaceCard from "./PlaceCard";
+import RequestForm from "./RequestForm";
 
 interface Props {
   t: Dict;
@@ -10,9 +12,22 @@ interface Props {
   busy: boolean;
   onSuggestion: (text: string) => void;
   onRetry: () => void;
+  onRequest: (place: Place) => void;
+  onFormLogged: (id: number, what: string) => void;
+  onFormCancel: () => void;
 }
 
-export default function AssistantMessage({ t, message, isLast, busy, onSuggestion, onRetry }: Props) {
+export default function AssistantMessage({
+  t,
+  message,
+  isLast,
+  busy,
+  onSuggestion,
+  onRetry,
+  onRequest,
+  onFormLogged,
+  onFormCancel,
+}: Props) {
   const validRefs = new Set(message.places.map((p) => p.ref));
   const cited = message.citedRefs.map((ref) => message.places[ref - 1]).filter(Boolean);
 
@@ -64,10 +79,27 @@ export default function AssistantMessage({ t, message, isLast, busy, onSuggestio
       {cited.length > 0 && (
         <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:scroll-px-6 sm:px-6">
           {cited.map((place) => (
-            <PlaceCard key={place.id} place={place} domId={`card-${message.id}-${place.ref}`} t={t} />
+            <PlaceCard
+              key={place.id}
+              place={place}
+              domId={`card-${message.id}-${place.ref}`}
+              t={t}
+              onRequest={busy ? undefined : () => onRequest(place)}
+            />
           ))}
         </div>
       )}
+
+      {message.form?.status === "open" && (
+        <RequestForm t={t} prefill={message.form.prefill} onLogged={onFormLogged} onCancel={onFormCancel} />
+      )}
+      {message.form?.status === "logged" && (
+        <div className="rounded-lg border-l-4 border-ink bg-mist px-4 py-3 text-sm leading-5 text-ink" role="status">
+          <p className="font-bold">{t.form.doneTitle}</p>
+          <p className="mt-1 text-ink-soft">{t.form.doneBody(message.form.what ?? "", message.form.requestId ?? 0)}</p>
+        </div>
+      )}
+      {message.form?.status === "cancelled" && <p className="text-sm text-muted">{t.form.cancelled}</p>}
 
       {message.status === "error" && (
         <div className="rounded-lg border-l-4 border-danger bg-danger-bg px-4 py-3 text-sm text-danger" role="alert">

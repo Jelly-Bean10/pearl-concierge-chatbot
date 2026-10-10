@@ -27,7 +27,52 @@ const CASES = [
     name: "book experience la",
     city: "los-angeles",
     messages: ["I want to book an experience"],
-    expect: { intent: "recommend", minCited: 1 },
+    expect: { intent: "request_venue", minCited: 1, noRequest: true },
+  },
+  {
+    name: "book named venue",
+    city: null,
+    messages: ["Can you book me a table at 34 Mayfair in London for Friday at 8pm for 4?"],
+    expect: {
+      intent: "request_venue",
+      metaCity: "london",
+      request: { kind: "venue", placeName: "34 Mayfair", partySize: 4, time: "20:00" },
+    },
+  },
+  {
+    name: "book named venue not in corpus",
+    city: "paris",
+    messages: ["Book me a table at Le Jules Verne for tomorrow"],
+    expect: { intent: "request_venue", noRequest: true },
+  },
+  {
+    name: "hotel late checkout",
+    city: null,
+    messages: ["I need a late checkout on Sunday"],
+    expect: { intent: "request_hotel", maxCited: 0, request: { kind: "hotel", serviceType: "late_checkout" } },
+  },
+  {
+    name: "fr: airport transfer",
+    lang: "fr",
+    city: null,
+    messages: ["J'ai besoin d'un transfert depuis l'aéroport demain matin"],
+    expect: {
+      intent: "request_hotel",
+      maxCited: 0,
+      request: { kind: "hotel", serviceType: "airport_transfer" },
+      reply: /\b(le|la|un|une|pour|des|et|vous|votre)\b/i,
+    },
+  },
+  {
+    name: "es: book named venue",
+    lang: "es",
+    city: "barcelona",
+    messages: ["¿Puedes reservarme una mesa en Bar del Pla para el sábado?"],
+    expect: {
+      intent: "request_venue",
+      request: { kind: "venue", placeName: "Bar del Pla" },
+      reply: /[áéíóúñ¿]|\b(el|la|un|una|para|en|con)\b/i,
+    },
   },
   {
     name: "need city",
@@ -186,6 +231,32 @@ async function run(c) {
     failures.push(`top candidates not in ${c.expect.cats}: ${places.slice(0, 4).map((p) => p.categorySlug)}`);
   if (c.expect.reply && !c.expect.reply.test(text))
     failures.push(`reply not in expected language: ${text.slice(0, 80)}`);
+  const request = events.find((e) => e.type === "request")?.prefill;
+  const want = c.expect.request;
+  if (want) {
+    if (!request) failures.push("no request event");
+    else {
+      if (request.kind !== want.kind) failures.push(`request kind ${request.kind} != ${want.kind}`);
+      if (want.serviceType && request.serviceType !== want.serviceType)
+        failures.push(`serviceType ${request.serviceType} != ${want.serviceType}`);
+      if (want.partySize && request.partySize !== want.partySize)
+        failures.push(`partySize ${request.partySize} != ${want.partySize}`);
+      if (want.time && request.time !== want.time) failures.push(`time ${request.time} != ${want.time}`);
+      if (want.placeName) {
+        const placed = request.placeRef ? places[request.placeRef - 1] : null;
+        if (placed?.name !== want.placeName) failures.push(`request place ${placed?.name} != ${want.placeName}`);
+        if (request.placeRef && !cited.includes(request.placeRef)) failures.push("requested place card not shown");
+      }
+    }
+  }
+  if (c.expect.noRequest && request) failures.push("unexpected request event");
+  // Pearl must never imply a booking happened (English check; other languages are read by a human).
+  if (
+    /\b(i'?ve|i have|has been|have been|is|are|was|got|now) (now )?(booked|confirmed|reserved)\b|\bsuccessfully\b/i.test(
+      text,
+    )
+  )
+    failures.push(`reply implies a confirmed booking: ${text.slice(0, 120)}`);
   const cityOfPlaces = new Set(places.map((p) => p.citySlug));
   if (cityOfPlaces.size > 1) failures.push(`candidates span cities: ${[...cityOfPlaces]}`);
   return { failures, text, meta, places, cited };

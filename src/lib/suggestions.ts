@@ -23,7 +23,7 @@ export function buildSuggestions(plan: Plan, cited: PlaceCard[], lang: Lang): st
   if (plan.intent === "need_city" || plan.intent === "unsupported_city" || !city) {
     return CITIES.slice(0, 3).map((c) => s.hidden(c.name));
   }
-  if (plan.intent !== "recommend") {
+  if (plan.intent !== "recommend" && plan.intent !== "request_venue") {
     return [s.hidden(city.name), s.dinner(city.name), s.book(city.name)];
   }
   if (cited.length === 0) {

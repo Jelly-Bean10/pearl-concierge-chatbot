@@ -7,9 +7,18 @@ import { readEvents } from "@/lib/read-stream";
 import { useLang } from "@/lib/use-lang";
 import type { ChatTurn, CitySlug, ErrorCode, ErrorEnvelope, Intent, PlaceCard } from "@/lib/types";
 import AssistantMessage from "./AssistantMessage";
+import type { FormPrefill } from "./RequestForm";
 import Composer from "./Composer";
 import Header from "./Header";
 import Welcome from "./Welcome";
+
+/** An inline concierge request form attached to an assistant message. */
+export interface FormState {
+  prefill: FormPrefill;
+  status: "open" | "logged" | "cancelled";
+  requestId?: number;
+  what?: string; // place name or service label, for the confirmation text
+}
 
 export interface UIMessage {
   id: string;
@@ -21,6 +30,7 @@ export interface UIMessage {
   citedRefs: number[];
   suggestions: string[];
   error?: ErrorCode | "network";
+  form?: FormState;
 }
 
 function newId() {
@@ -110,6 +120,22 @@ export default function Chat() {
           if (event.city) setCity(event.city);
         } else if (event.type === "places") {
           patch(reply.id, () => ({ places: event.places }));
+        } else if (event.type === "request") {
+          const p = event.prefill;
+          patch(reply.id, (m) => ({
+            form: {
+              status: "open",
+              prefill: {
+                kind: p.kind,
+                place: p.placeRef ? (m.places[p.placeRef - 1] ?? null) : null,
+                serviceType: p.serviceType,
+                city: p.city ?? city,
+                date: p.date,
+                time: p.time,
+                partySize: p.partySize,
+              },
+            },
+          }));
         } else if (event.type === "delta") {
           patch(reply.id, (m) => {
             const next = m.text + event.text;
@@ -134,6 +160,41 @@ export default function Chat() {
     const userText = messages[index - 1]?.text;
     if (index < 1 || !userText) return;
     void send(userText, messages.slice(0, index - 1));
+  }
+
+  /** "Request this" on a place card: add a local assistant message that holds the form. */
+  function requestPlace(place: PlaceCard) {
+    if (busy) return;
+    stickToBottom.current = true;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: newId(),
+        role: "assistant",
+        text: dict(lang).form.opened(place.name),
+        status: "done",
+        places: [],
+        citedRefs: [],
+        suggestions: [],
+        form: {
+          status: "open",
+          prefill: {
+            kind: "venue",
+            place,
+            serviceType: null,
+            city: place.citySlug,
+            date: null,
+            time: null,
+            partySize: null,
+          },
+        },
+      },
+    ]);
+  }
+
+  function setForm(id: string, update: Partial<FormState>) {
+    stickToBottom.current = true;
+    patch(id, (m) => (m.form ? { form: { ...m.form, ...update } } : {}));
   }
 
   function reset() {
@@ -177,6 +238,9 @@ export default function Chat() {
                   busy={busy}
                   onSuggestion={(text) => void send(text)}
                   onRetry={() => retry(m.id)}
+                  onRequest={requestPlace}
+                  onFormLogged={(id, what) => setForm(m.id, { status: "logged", requestId: id, what })}
+                  onFormCancel={() => setForm(m.id, { status: "cancelled" })}
                 />
               ),
             )
