@@ -14,7 +14,8 @@ OPENAI_API_KEY=
 SUPABASE_URL=
 
 # Supabase publishable key (Project Settings > API Keys, starts with sb_publishable_). Used by the app.
-# Safe by design: the table has RLS with no policies and the app only calls the read-only match_places().
+# Safe by design: both tables have RLS with no policies; with this key the app can only call match_places()
+# (read-only) and create_concierge_request() (validated insert, returns an id).
 SUPABASE_KEY=
 
 # Supabase secret key (starts with sb_secret_). ONLY for scraper/load.py. Not needed by the app or Vercel.
@@ -37,10 +38,10 @@ Locally, copy `.env.example` to `.env.local` and fill it. `load.py` reads the sa
 ## 2. Supabase setup
 
 1. supabase.com > New project. Name `pearl-concierge`. Region **East US (North Virginia)** (`us-east-1`), to sit next to Vercel's default function region `iad1`. Free plan is enough. Save the database password somewhere private (not needed by the app).
-2. SQL editor > New query > paste the full contents of `supabase/migrations/20261010000000_places.sql` > Run. Expect "Success. No rows returned."
+2. SQL editor > New query > paste the full contents of `supabase/migrations/20261010000000_places.sql` > Run. Expect "Success. No rows returned." Then do the same with `supabase/migrations/20261010000100_concierge_requests.sql`.
 3. Project Settings > API: copy the Project URL into `SUPABASE_URL`.
 4. Project Settings > API Keys: create or copy a **secret** key into `SUPABASE_SECRET_KEY`. Do not use the publishable/anon key; it can read nothing because of RLS.
-5. Verify: `select count(*) from public.places;` returns 0.
+5. Verify: `select count(*) from public.places;` returns 0 and `select count(*) from public.concierge_requests;` returns 0.
 
 Note: free Supabase projects pause after about a week of inactivity. Before sending the link, open the project dashboard once to make sure it is active; if it was paused, click "Restore".
 
@@ -76,13 +77,13 @@ In platform.openai.com: create a project `pearl-concierge`, create the API key i
 Run all of these against `https://<project>.vercel.app`:
 
 1. Open it in a private window on desktop and on a phone. The welcome screen loads with the Pearl Club fonts.
-2. `npm run eval -- https://<project>.vercel.app` passes 10/10.
-3. Manual test script steps 2, 3, 8, 10 from 08-TESTING-QA.
-4. Vercel > Project > Logs: each message shows `retrieval` and `turn_done` lines and no `turn_failed`.
+2. `npm run eval -- https://<project>.vercel.app` passes every case (22 at the time of writing).
+3. Manual test script steps 2, 3, 8, 10 from 08-TESTING-QA, plus L1, L3, R1 to R3 and R5 from section 2b.
+4. Vercel > Project > Logs: each message shows `retrieval` and `turn_done` lines and no `turn_failed`; each submitted request shows `request_logged` (id and type only, never personal data).
 5. The mobile check in 08-TESTING-QA section 6.
 
 ## 7. Handoff message
 
 Send the founder the production URL with this summary (adjust numbers to the real ones):
 
-> Here's the testing link: https://<project>.vercel.app. Pearl answers only from 1,785 Pearl Club places scraped from your site (NYC, London, Paris, LA). Every suggestion links back to its Pearl Club page, and it says so plainly when nothing fits instead of inventing a place. It's a small web app with a three-step loop (understand the request, search your places, write a grounded reply) and no agent framework, so it's easy to read and extend.
+> Here's the testing link: https://<project>.vercel.app. Pearl answers only from 3,375 Pearl Club places scraped from your site across 12 cities, in English, Spanish, French, German, Japanese and Urdu. Every suggestion links back to its Pearl Club page, and it says so plainly when nothing fits instead of inventing a place. It can also log a request for a venue or a hotel service. That is a request, not a booking: real reservations need a venue-side system, so Pearl states clearly that nothing is confirmed. It's a small web app with a three-step loop (understand the request, search your places, write a grounded reply) and no agent framework, so it's easy to read and extend.

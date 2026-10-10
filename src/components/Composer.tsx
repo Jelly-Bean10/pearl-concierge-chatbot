@@ -1,9 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import type { Dict } from "@/lib/i18n";
 import { MAX_USER_MESSAGE_CHARS } from "@/lib/validate";
 
-export default function Composer({ busy, onSend }: { busy: boolean; onSend: (text: string) => void }) {
+export default function Composer({ t, busy, onSend }: { t: Dict; busy: boolean; onSend: (text: string) => void }) {
   const [text, setText] = useState("");
   const ref = useRef<HTMLTextAreaElement>(null);
   const canSend = !busy && text.trim().length > 0;
@@ -31,9 +32,9 @@ export default function Composer({ busy, onSend }: { busy: boolean; onSend: (tex
           submit();
         }}
       >
-        <div className="flex items-end gap-2 rounded-2xl border border-line bg-paper py-1.5 pl-4 pr-1.5 focus-within:border-ink">
+        <div className="flex items-end gap-2 rounded-2xl border border-line bg-paper py-1.5 ps-4 pe-1.5 focus-within:border-ink">
           <label htmlFor="message" className="sr-only">
-            Message Pearl
+            {t.messageLabel}
           </label>
           <textarea
             id="message"
@@ -41,7 +42,7 @@ export default function Composer({ busy, onSend }: { busy: boolean; onSend: (tex
             rows={1}
             value={text}
             maxLength={MAX_USER_MESSAGE_CHARS}
-            placeholder="Ask Pearl for a place…"
+            placeholder={t.placeholder}
             onChange={(e) => {
               setText(e.target.value);
               resize();
@@ -57,7 +58,7 @@ export default function Composer({ busy, onSend }: { busy: boolean; onSend: (tex
           <button
             type="submit"
             disabled={!canSend}
-            aria-label="Send message"
+            aria-label={t.send}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-ink text-paper transition-opacity disabled:opacity-30"
           >
             <svg
@@ -74,7 +75,7 @@ export default function Composer({ busy, onSend }: { busy: boolean; onSend: (tex
           </button>
         </div>
         <div className="flex justify-between font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-          <span>Only Pearl Club curated places</span>
+          <span>{t.footer}</span>
           {text.length > MAX_USER_MESSAGE_CHARS - 100 && (
             <span>
               {text.length}/{MAX_USER_MESSAGE_CHARS}

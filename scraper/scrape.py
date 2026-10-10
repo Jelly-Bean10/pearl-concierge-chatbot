@@ -28,10 +28,8 @@ from bs4 import BeautifulSoup
 BASE = "https://www.pearlclub.com"
 SITEMAP_INDEX = f"{BASE}/sitemap.xml"
 CITIES = [
-    "new-york-city",
-    "london",
-    "paris",
-    "los-angeles",
+    "new-york-city", "london", "paris", "los-angeles",
+    "berlin", "san-francisco", "austin", "barcelona", "amsterdam", "lisbon", "tokyo", "miami",
 ]  # must match src/lib/catalog.ts
 
 # Category slugs (as they appear in the sitemap) whose pages are places. Must match src/lib/catalog.ts.

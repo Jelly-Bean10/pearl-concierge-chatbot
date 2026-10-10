@@ -6,7 +6,8 @@
  OFFLINE (run once on a laptop)                           ONLINE (Vercel)
 
  pearlclub.com                                            Browser (React, Chat.tsx)
-   sitemap.xml -> sitemap-0/1.xml                            │ POST /api/chat  {messages, city, shownPlaceIds}
+   sitemap.xml -> sitemap-0/1.xml                            │ POST /api/chat  {messages, city, lang, shownPlaceIds}
+                                                             │ POST /api/request  (concierge form) -> rpc create_concierge_request
    place pages (JSON-LD + tag HTML)                          ▼
         │                                                 /api/chat  (Next.js route handler, Node runtime)
         ▼                                                    │
@@ -19,13 +20,13 @@
         ▼                                                    └─4─ done: cited refs + 3 follow-up chips
  Supabase Postgres + pgvector  ◄──────── match_places ────────┘
    public.places (1 row per place, 1 embedding per row)      ▲
-                                                             │ NDJSON stream: meta, places, delta*, done | error
+                                                             │ NDJSON stream: meta, places, request?, delta*, done | error
                                                           Browser renders text + cards for cited places only
 ```
 
 ## Data flow, scrape to answer
 
-1. **Discover**: `scrape.py` reads `https://www.pearlclub.com/sitemap.xml`, follows the `sitemap-N.xml` children, and keeps URLs shaped `/cities/{city}/{category}/{slug}` for the four MVP cities and 23 place categories (about 2,050 URLs).
+1. **Discover**: `scrape.py` reads `https://www.pearlclub.com/sitemap.xml`, follows the `sitemap-N.xml` children, and keeps URLs shaped `/cities/{city}/{category}/{slug}` for the 12 loaded cities and 23 place categories.
 2. **Extract**: for each page, parse the JSON-LD node whose `@id` ends in `#place` (name, descriptions, images, geo, price, links) and the tag sections in the HTML (venue type, cuisine, audience, "Appears in" lists). Pages with no `#place` node are stubs and are skipped (about 13%).
 3. **Store raw**: write one JSON object per place to `data/places.jsonl`. HTML is cached on disk so re-runs are free.
 4. **Embed and load**: `load.py` builds one text chunk per place, embeds changed rows in batches of 100, and upserts into `public.places` keyed by URL.
@@ -46,14 +47,16 @@
 | Python 3.12+ scraper (httpx + BeautifulSoup) | Founder's stated preference for Python scraping; run once locally, not deployed. |
 | JSON-LD extraction instead of DOM parsing | Place pages carry complete schema.org JSON-LD; it is stable and far simpler than CSS selectors. DOM is used only for tags, which JSON-LD lacks. |
 | Supabase Postgres + pgvector | Founder's stack; filters (city, category, price) and vector search in one SQL query. |
-| No vector index | ~1,800 rows is an exact scan in milliseconds; approximate indexes plus WHERE filters can silently drop matches. |
-| RLS on, no policies; reads only through a read-only `security definer` function | The table is unreachable through the API. The app calls `match_places()` (max 20 rows, public data) with the publishable key; only the one-time loader writes, with a service key. |
+| No vector index | ~3,400 rows is still an exact scan in milliseconds; approximate indexes plus WHERE filters can silently drop matches. |
+| RLS on, no policies; access only through two narrow `security definer` functions | Neither table is reachable through the API. The app uses the publishable key to call `match_places()` (read-only, max 20 rows, public data) and `create_concierge_request()` (validating insert, returns only an id). Only the one-time loader writes `places`, with a service key. |
+| UI strings in one typed dictionary, planner translates the query to English | Six languages with no translation library; a missing key fails the build; retrieval stays English so it works the same in every language. |
+| Booking is a logged request, not a reservation | Pearl Club has no venue-side system to accept or refuse a reservation, so the app never claims one (11-CONCIERGE-AND-I18N). |
 | OpenAI `text-embedding-3-small` (1536 dims) | Cheap (the whole corpus costs about $0.02 to embed), good quality, not deprecated. |
 | OpenAI `gpt-4.1-mini` via Chat Completions | Fast first token, supports strict JSON-schema output and streaming, not deprecated. Overridable with `OPENAI_CHAT_MODEL`. |
 | Official `openai` npm SDK, no AI SDK or LangChain | Three explicit calls are easier to read and debug than a framework; avoids version-churn APIs. |
 | Separate planner call before retrieval | Makes follow-ups work ("cheaper", "the second one"), detects the city, and extracts filters, in one structured call. Without it, vector search on "something cheaper" returns noise. |
 | Citation markers `[[n]]` | Lets the UI tie every mentioned place to a database row and drop anything else. |
-| Hand-rolled NDJSON stream | One event per line (`meta`, `places`, `delta`, `done`, `error`); about 15 lines on each side, fully specified in 04-API-SPEC. |
+| Hand-rolled NDJSON stream | One event per line (`meta`, `places`, `request`, `delta`, `done`, `error`); about 15 lines on each side, fully specified in 04-API-SPEC. |
 | Deterministic follow-up chips | Zero latency and zero cost; good enough for three suggestions. |
 | In-memory per-IP rate limit + OpenAI budget cap | Enough for a demo link; no Redis needed. |
 | Vercel (Node runtime, `maxDuration = 60`) | Founder's stack; streaming route handlers work out of the box. |

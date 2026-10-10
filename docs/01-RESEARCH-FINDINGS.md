@@ -1,5 +1,7 @@
 # 01 · Research Findings
 
+> Snapshot note: the counts in this document (1,785 places, four cities) are from the first research pass. The MVP now loads 12 cities and 3,375 places; see 03-DATA-PIPELINE section 1. The site structure findings are unchanged.
+
 Everything below was verified against the live pearlclub.com on 2026-10-10 with plain HTTP requests (no browser needed). Pearl Club was formerly called Tipsiti; its JSON-LD still lists `"alternateName": "Tipsiti"` and `"legalName": "Tipsiti LLC."`.
 
 ## 1. Decisions this research drove

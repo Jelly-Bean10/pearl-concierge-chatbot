@@ -1,4 +1,5 @@
 import { CITIES, cityBySlug } from "./catalog";
+import { t, type Lang } from "./i18n";
 import type { Plan } from "./planner";
 import type { PlaceCard } from "./types";
 
@@ -14,28 +15,29 @@ const CULTURE = [
   "weekend-trips",
 ];
 
-/** Three follow-up chips shown under an assistant message. Deterministic: no extra model call. */
-export function buildSuggestions(plan: Plan, cited: PlaceCard[]): string[] {
+/** Three follow-up chips shown under an assistant message. Deterministic and localized: no model call. */
+export function buildSuggestions(plan: Plan, cited: PlaceCard[], lang: Lang): string[] {
+  const s = t(lang).sug;
   const city = cityBySlug(plan.city);
 
   if (plan.intent === "need_city" || plan.intent === "unsupported_city" || !city) {
-    return CITIES.slice(0, 3).map((c) => `Hidden gems in ${c.name}`);
+    return CITIES.slice(0, 3).map((c) => s.hidden(c.name));
   }
-  if (plan.intent !== "recommend") {
-    return [`Hidden gems in ${city.name}`, `Dinner tonight in ${city.name}`, `Book an experience in ${city.name}`];
+  if (plan.intent !== "recommend" && plan.intent !== "request_venue") {
+    return [s.hidden(city.name), s.dinner(city.name), s.book(city.name)];
   }
   if (cited.length === 0) {
-    return [`Hidden gems in ${city.name}`, `Best cafes in ${city.name}`, `Things to do in ${city.name}`];
+    return [s.hidden(city.name), s.cafes(city.name), s.things(city.name)];
   }
 
   const category = cited[0].categorySlug;
   const pairing = FOOD.includes(category)
-    ? "Where should I go for drinks after?"
+    ? s.drinksAfter
     : DRINKS.includes(category)
-      ? "Where can I eat late nearby?"
+      ? s.eatLate
       : CULTURE.includes(category)
-        ? "Somewhere good to eat nearby?"
-        : `Hidden gems in ${city.name}`;
+        ? s.eatNearby
+        : s.hidden(city.name);
   const anyPricey = cited.some((p) => (p.priceRange?.length ?? 0) >= 2);
-  return [anyPricey ? "Something cheaper" : "Something more upscale", "Show me different options", pairing];
+  return [anyPricey ? s.cheaper : s.pricier, s.different, pairing];
 }

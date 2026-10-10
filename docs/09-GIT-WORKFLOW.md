@@ -45,6 +45,7 @@ One commit per task, in this order. Run `npm run format && npm run lint && npm r
 | T12 | `test(qa): add grounding eval script`, then `fix(<scope>): <what QA found>` (one commit per distinct fix) |
 | T13 | merge commit `chore(deploy): release MVP to production` |
 | T14 | `docs: add live demo link to README` |
+| T15 | `feat(scraper): expand corpus to 12 cities`, `feat(i18n): add multilingual UI and replies`, `feat(concierge): add honest request flow for venues and hotel services` |
 
 ## Rules
 

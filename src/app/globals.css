@@ -19,6 +19,12 @@
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
 }
 
+/* Urdu: Cormorant and Karla have no Arabic-script glyphs, so swap in a Naskh face for text. */
+:lang(ur) {
+  --font-display: var(--font-urdu), ui-serif, serif;
+  --font-sans: var(--font-urdu), ui-sans-serif, sans-serif;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;

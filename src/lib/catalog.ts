@@ -6,6 +6,14 @@ export const CITIES: { slug: CitySlug; name: string; flag: string }[] = [
   { slug: "london", name: "London", flag: "🇬🇧" },
   { slug: "paris", name: "Paris", flag: "🇫🇷" },
   { slug: "los-angeles", name: "Los Angeles", flag: "🇺🇸" },
+  { slug: "berlin", name: "Berlin", flag: "🇩🇪" },
+  { slug: "san-francisco", name: "San Francisco", flag: "🇺🇸" },
+  { slug: "austin", name: "Austin", flag: "🇺🇸" },
+  { slug: "barcelona", name: "Barcelona", flag: "🇪🇸" },
+  { slug: "amsterdam", name: "Amsterdam", flag: "🇳🇱" },
+  { slug: "lisbon", name: "Lisbon", flag: "🇵🇹" },
+  { slug: "tokyo", name: "Tokyo", flag: "🇯🇵" },
+  { slug: "miami", name: "Miami", flag: "🇺🇸" },
 ];
 
 export const CITY_SLUGS = CITIES.map((c) => c.slug);

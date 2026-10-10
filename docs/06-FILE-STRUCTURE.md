@@ -1,6 +1,6 @@
 # 06 · File Structure
 
-The complete tree after the MVP is built. Do not add files outside this list. Files marked *(scaffold)* come from `create-next-app` and are not edited unless noted.
+The complete tree after the MVP is built. Do not add files outside this list. (Updated to include the multilingual and concierge additions, see 11-CONCIERGE-AND-I18N.) Files marked *(scaffold)* come from `create-next-app` and are not edited unless noted.
 
 ```
 .
@@ -33,7 +33,8 @@ The complete tree after the MVP is built. Do not add files outside this list. Fi
 │   └── eval.mjs                       Grounding and behaviour check against a running app
 ├── supabase/
 │   └── migrations/
-│       └── 20261010000000_places.sql  Table, RLS, match_places() function
+│       ├── 20261010000000_places.sql  Table, RLS, match_places() function
+│       └── 20261010000100_concierge_requests.sql  Requests table, RLS, create_concierge_request()
 └── src/
     ├── app/
     │   ├── favicon.ico                (scaffold)
@@ -41,18 +42,25 @@ The complete tree after the MVP is built. Do not add files outside this list. Fi
     │   ├── layout.tsx                 Fonts, metadata, viewport, <html>/<body>
     │   ├── page.tsx                   Renders <Chat />
     │   └── api/
-    │       └── chat/
-    │           └── route.ts           POST /api/chat: validate, plan, retrieve, stream answer
+    │       ├── chat/
+    │       │   └── route.ts           POST /api/chat: validate, plan, retrieve, stream answer
+    │       └── request/
+    │           └── route.ts           POST /api/request: validate and log a concierge request
     ├── components/
     │   ├── Chat.tsx                   Client root: state, fetch + stream handling, layout shell
     │   ├── Header.tsx                 Wordmark, gradient bar, city chips, New chat
-    │   ├── Welcome.tsx                Greeting + four starter cards
+    │   ├── Welcome.tsx                Greeting + four starter cards (localized)
+    │   ├── RequestForm.tsx            Inline concierge request form (venue and hotel service)
     │   ├── AssistantMessage.tsx       Pearl's text with citation buttons, card row, error, follow-ups
     │   ├── PlaceCard.tsx              One place card
     │   └── Composer.tsx               Textarea + send button + footer note
     └── lib/
         ├── types.ts                   Shared request/response/event types (client + server)
         ├── catalog.ts                 Supported cities and place categories (client + server)
+        ├── i18n.ts                    Six-language UI dictionary, language list, service types (client + server)
+        ├── use-lang.ts                Language selection hook: saved choice, browser language, English (client)
+        ├── request-validate.ts        Request form rules shared by form and /api/request (client + server)
+        ├── match-place.ts             Match a venue the user named to a retrieved candidate (server)
         ├── citations.ts               [[n]] marker parsing (client + server)
         ├── validate.ts                Request body validation, message length limit (client + server)
         ├── read-stream.ts             NDJSON reader for fetch responses (client)
