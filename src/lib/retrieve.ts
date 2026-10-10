@@ -6,7 +6,7 @@ import type { CitySlug, PlaceCard } from "./types";
 const EMBED_TIMEOUT_MS = 8_000;
 const MATCH_COUNT = 8; // candidates handed to the model
 const MIN_RESULTS_BEFORE_RELAXING = 3;
-// Cosine similarity floor. Calibrate with the procedure in docs/03-DATA-PIPELINE.md section 9.
+// Cosine similarity floor, tuned by hand: relevant matches score above it, unrelated queries fall below.
 export const MIN_SIMILARITY = 0.25;
 
 /** Row returned by the match_places SQL function. */

@@ -1,7 +1,7 @@
 import "server-only";
 
 // Best-effort, per server instance. Enough to stop a stuck client or casual abuse of a demo link;
-// the real cost ceiling is the monthly budget set on the OpenAI project (docs/10-DEPLOYMENT.md).
+// the real cost ceiling is the monthly budget set on the OpenAI project.
 const WINDOW_MS = 10 * 60_000;
 const hits = new Map<string, number[]>();
 

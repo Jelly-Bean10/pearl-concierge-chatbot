@@ -45,3 +45,4 @@ data/
 scraper/.venv/
 scraper/.cache/
 __pycache__/
+supabase/.temp/

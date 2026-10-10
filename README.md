@@ -1,71 +1,77 @@
-# Ask Pearl · Pearl Club travel concierge (MVP)
+# Ask Pearl
 
-**Live demo:** https://pearl-concierge.vercel.app
+A chat assistant for [Pearl Club](https://www.pearlclub.com). Pick a city, ask for something, and Pearl answers with cards for real Pearl Club places that link back to their pages.
 
-A mobile-first chat assistant that recommends places hand-picked by Pearl Club's local curators. Pick a city, ask for anything from hidden gems to dinner tonight, and Pearl answers in a few sentences with cards for real Pearl Club places, each linking to its pearlclub.com page. It never invents a place: answers are grounded in 3,375 places scraped from pearlclub.com (with the founder's permission) across 12 cities: New York City, London, Paris, Los Angeles, Berlin, San Francisco, Austin, Barcelona, Amsterdam, Lisbon, Tokyo and Miami. It speaks English, Spanish, French, German, Japanese and Urdu, and can log concierge and hotel service requests (it cannot make real bookings; see below).
+**Live:** https://pearl-concierge.vercel.app
+
+Built as a short test project. It covers 12 cities (3,375 places), six languages (English, Spanish, French, German, Japanese, Urdu), and logs concierge requests for venues and hotel services.
 
 ## How it works
 
-```
-message ─► plan (intent, city, filters, search phrase) ─► vector search in Postgres ─► streamed answer citing [[n]] ─► cards
-```
+One request to `/api/chat` does three things:
 
-- `scraper/scrape.py` reads Pearl Club's sitemaps and each place page's JSON-LD, writes `data/places.jsonl`.
-- `scraper/load.py` embeds each place once and upserts it into Supabase (pgvector).
-- `src/app/api/chat/route.ts` plans the turn, retrieves candidates with `match_places`, and streams an answer that may only mention those candidates, as NDJSON.
-- `src/app/api/request/route.ts` logs a concierge request through a validating database function. This is a request, not a booking: real reservations need a venue-side system, so Pearl says plainly that nothing is confirmed.
-- `src/lib/i18n.ts` holds every UI string in six languages; the planner translates the search phrase to English so retrieval works in any language.
-- `src/components/` renders the chat, citation buttons, place cards, and the inline request form.
+1. **Plan.** A small structured-output call turns the message and recent history into an intent, a city, filters, and an English search phrase. This is what makes "something cheaper", "coffee in Brooklyn" and non-English messages work.
+2. **Retrieve.** The phrase is embedded and matched against the places table in Postgres (pgvector), filtered by city.
+3. **Answer.** The reply is streamed, and the model may only mention the retrieved places. Each mention carries a `[[n]]` marker, and the cards shown are built from database rows for those markers only. A place the model names without a marker never gets a card, and an unknown marker is dropped.
 
-Full design and specs: [`docs/`](docs/00-OVERVIEW.md).
+The place data was scraped from Pearl Club's sitemaps and the JSON-LD on each place page (`scraper/`). `load.py` embeds each place once and upserts it, so re-runs are free.
 
-## Run locally
+### Requests, not bookings
 
-Requirements: Node 22+, Python 3.11+, a Supabase project, an OpenAI API key.
+Pearl Club has no reservation system to talk to, so "book me a table" opens a short form and logs a request to the `concierge_requests` table. Pearl says plainly that nothing is confirmed. Nobody is notified yet; wiring a venue or hotel inbox would be the next step.
+
+Both tables have row level security on with no policies. The app uses the publishable key and can only call two database functions: `match_places` (read only) and `create_concierge_request` (validated insert).
+
+## Run it
+
+Needs Node 22+, Python 3.11+, a Supabase project and an OpenAI API key.
 
 ```bash
 npm install
+cp .env.example .env.local   # fill in the values
 ```
 
-```bash
-cp .env.example .env.local
-```
-
-Fill `.env.local` (see [`docs/10-DEPLOYMENT.md`](docs/10-DEPLOYMENT.md#1-environment-variables)), run both SQL files in `supabase/migrations/` once in the Supabase SQL editor (places, then concierge requests), then seed:
+Run the two files in `supabase/migrations/` in the Supabase SQL editor, then load the data:
 
 ```bash
 python3 -m venv scraper/.venv && scraper/.venv/bin/pip install -r scraper/requirements.txt
-```
-
-```bash
-scraper/.venv/bin/python scraper/scrape.py
-```
-
-```bash
-scraper/.venv/bin/python scraper/load.py
-```
-
-Start the app at http://localhost:3000:
-
-```bash
+scraper/.venv/bin/python scraper/scrape.py    # writes data/places.jsonl
+scraper/.venv/bin/python scraper/load.py      # embeds and uploads
 npm run dev
 ```
 
-Checks:
+| Variable              | Used by     | Notes                                               |
+| --------------------- | ----------- | --------------------------------------------------- |
+| `OPENAI_API_KEY`      | app, loader | Chat and embeddings. Set a budget limit on the key. |
+| `SUPABASE_URL`        | app, loader |                                                     |
+| `SUPABASE_KEY`        | app         | Publishable key.                                    |
+| `SUPABASE_SECRET_KEY` | loader only | Never set on Vercel.                                |
+| `OPENAI_CHAT_MODEL`   | app         | Optional, defaults to `gpt-4.1-mini`.               |
+
+## Checks
 
 ```bash
 npm run format:check && npm run lint && npm run typecheck && npm run build
+npm run eval                                  # against localhost:3000
+npm run eval -- https://pearl-concierge.vercel.app
 ```
 
-```bash
-npm run eval
+`scripts/eval.mjs` sends 25 real conversations and checks the stream: intent, city, that every `[[n]]` points at a real card, that every card URL is a Pearl Club page, reply language, and that booking replies never claim a confirmation. The chat route allows 30 requests per 10 minutes per IP, so restart the dev server between two full runs.
+
+## Known limits
+
+- State lives in the browser. A refresh starts a new chat.
+- The planner is a model, so an obscure neighbourhood can still fall through to "which city?".
+- Booking is a request log only (see above).
+- No map, no geolocation, no accounts.
+
+## Layout
+
 ```
-
-## Deploy
-
-Import the repo into Vercel, set `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY` (publishable) for Production and Preview, and deploy `main`. Share the production domain (`https://<project>.vercel.app`), which is public; deployment-specific URLs are behind Vercel login by default. Details in [`docs/10-DEPLOYMENT.md`](docs/10-DEPLOYMENT.md).
-
-## Scope
-
-In: chat, grounded recommendations, place cards, city context, follow-up suggestions, mobile layout, six languages, concierge and hotel service requests (logged, never confirmed).
-Out: real booking and payments, email hand-off, accounts, saved history, map views, fictional demo hotels, products, other cities. See [`docs/00-OVERVIEW.md`](docs/00-OVERVIEW.md#explicit-non-goals) and [`docs/11-CONCIERGE-AND-I18N.md`](docs/11-CONCIERGE-AND-I18N.md).
+scraper/      scrape.py, load.py
+supabase/     migrations
+scripts/      eval.mjs
+src/app/api/  chat (streaming RAG), request (concierge requests)
+src/lib/      planner, retrieve, prompt, i18n, request validation
+src/components/
+```
