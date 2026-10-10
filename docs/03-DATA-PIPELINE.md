@@ -3,9 +3,9 @@
 Scrape pearlclub.com once on a laptop, embed, and load into Supabase. Nothing in this pipeline runs on Vercel. All facts here were verified against the live site on 2026-10-10 (see 01-RESEARCH-FINDINGS).
 
 ```
-sitemap.xml ─► sitemap-0.xml, sitemap-1.xml ─► 2,051 place URLs (4 cities, 23 categories)
+sitemap.xml ─► sitemap-0.xml, sitemap-1.xml ─► place URLs (12 cities, 23 categories)
    ─► GET each canonical URL (4 workers, 0.5 s pause each, HTML cached) ─► parse JSON-LD #place + tag HTML
-   ─► data/places.jsonl (1,785 places on 2026-10-10; 266 URLs (13%) were stubs and skipped)
+   ─► data/places.jsonl (3,375 places across 12 cities; stub pages with no `#place` node are skipped)
    ─► load.py: build embedding text ─► text-embedding-3-small (1536d) ─► upsert public.places on url
 ```
 
@@ -13,9 +13,9 @@ sitemap.xml ─► sitemap-0.xml, sitemap-1.xml ─► 2,051 place URLs (4 citie
 
 | Setting | Value |
 |---|---|
-| Cities | `new-york-city`, `london`, `paris`, `los-angeles` |
+| Cities | `new-york-city`, `london`, `paris`, `los-angeles`, `berlin`, `san-francisco`, `austin`, `barcelona`, `amsterdam`, `lisbon`, `tokyo`, `miami` |
 | Categories | The 23 slugs in `CATEGORY_LABELS` in `scrape.py` (places only; products and curator profiles are excluded) |
-| Expected output | 1,785 places as of 2026-10-10 (NYC 635, London 601, Paris 282, LA 267); the exact count is logged |
+| Expected output | 3,375 places loaded (NYC 635, London 601, Berlin 455, Paris 282, LA 267, Austin 260, San Francisco 204, Lisbon 146, Amsterdam 138, Barcelona 136, Miami 126, Tokyo 125); the exact count is logged and drifts as Pearl Club adds places |
 
 To add a city later: add its slug to `CITIES` in `scraper/scrape.py` and to `CITIES` in `src/lib/catalog.ts` (with name and flag), add it to the `CitySlug` type, re-run both scripts.
 
@@ -162,7 +162,7 @@ Design notes:
 - `url` is unique and is the upsert key.
 - No vector index (exact scan of ~1,800 rows takes milliseconds and never drops filtered matches).
 - RLS is enabled with no policies, so the table cannot be read or written through the API. The app reads only through `match_places()`, a `security definer` function callable with the publishable key (read-only, 20 rows max, public data). Writes need a service key and happen only in `load.py`.
-- `match_places` is `stable`, pins `search_path` (so `<=>` resolves to pgvector in the `extensions` schema), caps `match_count` at 20, and is executable only by `service_role`.
+- `match_places` is `stable`, pins `search_path` (so `<=>` resolves to pgvector in the `extensions` schema), caps `match_count` at 20, and is executable by `anon`, `authenticated` and `service_role` (it is read-only and the data is public).
 - Price filter keeps places with unknown price.
 
 ```sql
@@ -263,6 +263,112 @@ $$;
 -- already public on pearlclub.com. No write path exists for anon.
 revoke execute on function public.match_places(extensions.vector, int, text, text[], int, bigint[]) from public;
 grant execute on function public.match_places(extensions.vector, int, text, text[], int, bigint[]) to anon, authenticated, service_role;
+```
+
+## 6b. Database: concierge requests
+
+Path: `supabase/migrations/20261010000100_concierge_requests.sql`. Apply it after the places migration. See 11-CONCIERGE-AND-I18N for the product behaviour.
+
+Design notes:
+
+- A request is **not** a booking. The table is a log for a human to follow up on.
+- RLS is on with no policies: nobody can read (names and emails) or write the table through the API. The only write path is `create_concierge_request()`, a `security definer` function with a pinned `search_path`, callable with the publishable key. It re-validates every field, looks up `place_name` and the city from `places` (so a client cannot forge them), and returns only the new id.
+- `place_id` is nullable and `on delete set null`; `place_name` is copied at insert time so the record survives a re-seed.
+- A check constraint ties the shape to the type: a `venue` row has a place and no service; a `hotel_service` row has a service and no place.
+- Errors raised by the function use SQLSTATE `22023` (invalid parameter); the API maps it to a 400.
+
+```sql
+-- Concierge requests: honest request log. Pearl Club has no reservation system, so nothing here is a booking.
+-- Rows are written only through create_concierge_request() (security definer); the table itself has RLS
+-- on with no policies, so nobody can read or write it directly through the API.
+
+create table if not exists public.concierge_requests (
+  id           bigint generated always as identity primary key,
+  request_type text not null check (request_type in ('venue', 'hotel_service')),
+  place_id     bigint references public.places (id) on delete set null,
+  place_name   text,                                  -- copied from places at insert time, so it survives a re-seed
+  service_type text check (service_type in ('spa', 'late_checkout', 'airport_transfer', 'restaurant_reservation', 'other')),
+  city         text not null,                         -- city slug
+  date         date not null,
+  time         time not null,
+  party_size   smallint not null check (party_size between 1 and 20),
+  name         text not null check (char_length(name) between 1 and 100),
+  email        text not null check (char_length(email) <= 254 and email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  notes        text check (char_length(notes) <= 500),
+  created_at   timestamptz not null default now(),
+  constraint concierge_requests_shape check (
+    (request_type = 'venue' and place_id is not null and place_name is not null and service_type is null)
+    or (request_type = 'hotel_service' and place_id is null and place_name is null and service_type is not null)
+  )
+);
+
+alter table public.concierge_requests enable row level security;
+
+create or replace function public.create_concierge_request(
+  p_request_type text,
+  p_place_id     bigint,
+  p_service_type text,
+  p_city         text,
+  p_date         date,
+  p_time         time,
+  p_party_size   int,
+  p_name         text,
+  p_email        text,
+  p_notes        text
+)
+returns bigint
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_place public.places%rowtype;
+  v_city  text := p_city;
+  v_id    bigint;
+begin
+  -- Server enforces the same rules as the form. Constraints above reject the rest (SQLSTATE 23514).
+  if p_date is null or p_date < current_date - 1 or p_date > current_date + 365 then
+    raise exception 'invalid_date' using errcode = '22023';
+  end if;
+
+  if p_request_type = 'venue' then
+    select * into v_place from public.places where id = p_place_id;
+    if not found then
+      raise exception 'invalid_place' using errcode = '22023';
+    end if;
+    v_city := v_place.city_slug;
+  elsif p_request_type = 'hotel_service' then
+    if not exists (select 1 from public.places where city_slug = p_city) then
+      raise exception 'invalid_city' using errcode = '22023';
+    end if;
+  else
+    raise exception 'invalid_type' using errcode = '22023';
+  end if;
+
+  insert into public.concierge_requests
+    (request_type, place_id, place_name, service_type, city, date, time, party_size, name, email, notes)
+  values
+    (p_request_type,
+     case when p_request_type = 'venue' then v_place.id end,
+     case when p_request_type = 'venue' then v_place.name end,
+     case when p_request_type = 'hotel_service' then p_service_type end,
+     v_city, p_date, p_time, p_party_size, btrim(p_name), btrim(p_email), nullif(btrim(coalesce(p_notes, '')), ''))
+  returning id into v_id;
+
+  return v_id;
+end;
+$$;
+
+-- Callable with the publishable key. It can only insert validated rows and returns just the new id.
+revoke execute on function public.create_concierge_request(text, bigint, text, text, date, time, int, text, text, text) from public;
+grant execute on function public.create_concierge_request(text, bigint, text, text, date, time, int, text, text, text) to anon, authenticated, service_role;
+```
+
+Read the requests as the team (dashboard or service role), never from the app:
+
+```sql
+select id, created_at, request_type, coalesce(place_name, service_type) as what, city, date, time, party_size, name, email, notes
+from public.concierge_requests order by created_at desc limit 50;
 ```
 
 ## 7. Idempotency

@@ -1,5 +1,7 @@
 # 05 · Design System
 
+> As-built changes: the listings in this document are the original spec and the repo is canonical. Since then the UI gained a language selector in the header, all strings moved into `src/lib/i18n.ts` (components receive a `t` dictionary prop), RTL support (logical classes such as `ps-*`, `pe-*`, `start-*`, `text-start`; `<html dir>` set for Urdu), a "Request this" button on place cards, and an inline request form (`RequestForm.tsx`). Those are described in 11-CONCIERGE-AND-I18N. The request form reuses the existing tokens: `border-line` inputs, `bg-mist` notice, `bg-ink` primary button, `text-danger` errors, 44 px tall controls and 16 px text so iOS does not zoom.
+
 ## Direction
 
 Pearl Club's site is warm and editorial: clean white pages, a light serif display face (Cormorant), a friendly sans for body (Karla), small uppercase monospace labels (Space Mono), near-black `#121113` pill tags in lowercase, a thin blue-to-red gradient accent, and flag emoji next to cities. The concierge borrows that vocabulary so it feels like part of pearlclub.com, without copying its code.

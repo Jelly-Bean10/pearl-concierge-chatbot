@@ -186,7 +186,7 @@ No new files: the UI from T03 now talks to the real route.
 scraper/.venv/bin/python scraper/load.py
 ```
 
-**Acceptance:** the queries in 03-DATA-PIPELINE section 12 show four cities, the total equals the scraper's `count`, and the Burgh House lookup returns its row.
+**Acceptance:** the queries in 03-DATA-PIPELINE section 12 show every loaded city (12 in the shipped version), the total equals the scraper's `count`, and the Burgh House lookup returns its row.
 
 ---
 
@@ -211,6 +211,18 @@ Create `scripts/eval.mjs` verbatim from 08-TESTING-QA section 1 and commit it (`
 Follow 10-DEPLOYMENT sections 3 to 6. Merge the feature branch into `main` so the production deployment is built from `main`.
 
 **Acceptance:** `npm run eval -- https://<project>.vercel.app` passes 10/10, and the production URL opens on a phone in a private window without any login prompt.
+
+---
+
+### T15 · 12 cities, multilingual UI, concierge requests (added after the first release)
+
+Done after T14, each as its own commit on a follow-up branch:
+
+1. **Cities**: add eight slugs to `CITIES` in `scraper/scrape.py` and `src/lib/catalog.ts` and to `CitySlug`, re-run `scrape.py` and `load.py` (3,375 places in total).
+2. **Multilingual**: `src/lib/i18n.ts`, `src/lib/use-lang.ts`, language selector in `Header.tsx`, `t` props on every component, `lang` in the request, `user_language` in the planner, RTL for Urdu.
+3. **Concierge requests**: second migration, `/api/request`, planner intents `request_venue` and `request_hotel`, `request` stream event, `RequestForm.tsx`, "Request this" on cards.
+
+**Acceptance:** `npm run eval` passes every case (22) locally and against production; the manual checks in 08-TESTING-QA sections 2b and 6 pass at 390 px. Full description: 11-CONCIERGE-AND-I18N.
 
 ---
 

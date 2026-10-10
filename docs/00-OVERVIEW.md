@@ -9,9 +9,11 @@ The founder brief asked for:
 | Brief item | How this MVP covers it |
 |---|---|
 | Conversational, human-like interface | Streaming chat answers from an LLM, written as a well-travelled local friend |
-| Pearl Club content | 1,785 places scraped from pearlclub.com (founder-authorized), stored with embeddings |
+| Pearl Club content | 3,375 places in 12 cities scraped from pearlclub.com (founder-authorized), stored with embeddings |
 | Personalization (preferences, history, location) | City picker + city detected from the conversation; budget, mood, and cuisine extracted from the whole conversation on every turn; "show me different options" excludes places already shown |
-| Greeting and menu ("Find Hidden Gems", "Book an Experience") | Welcome screen with four starter cards |
+| Greeting and menu ("Find Hidden Gems", "Book an Experience") | Welcome screen with four starter cards. "Book an experience" leads into the concierge request flow |
+| Multilingual | English, Spanish, French, German, Japanese and Urdu: UI, replies and request form (11-CONCIERGE-AND-I18N) |
+| Concierge and hotel service requests | "Request this" on place cards plus natural-language booking intent open an inline form. Requests are logged to `concierge_requests` and the user is told plainly that nothing is confirmed (11-CONCIERGE-AND-I18N) |
 | Recommendations | Retrieval-augmented answers with place cards |
 | Follow-up interaction | Three follow-up chips after every answer |
 | Testing link | Public Vercel production URL |
@@ -36,7 +38,7 @@ The build is done when all of these are true on the deployed URL:
 3. Time to first streamed word is under 4 seconds for a normal request.
 4. A follow-up ("something cheaper") stays in the same city without re-selecting it.
 5. Asking about an unsupported city (e.g. "bars in Lagos") gets a polite "not covered yet" and no cards.
-6. `npm run eval` against the deployed URL passes 10/10.
+6. `npm run eval` against the deployed URL passes every case (22 at the time of writing, including five languages and the booking cases).
 7. The manual hallucination review in 08-TESTING-QA finds zero invented places across 15 answers.
 8. `npm run format:check`, `npm run lint`, `npm run typecheck`, and `npm run build` all pass.
 
@@ -44,12 +46,14 @@ The build is done when all of these are true on the deployed URL:
 
 Do not build any of these, even partially. Simplicity is part of what is being evaluated.
 
-- Booking, reservations, payments, availability checks. "Book an experience" recommends experiences and links to the venue's own website.
+- Real booking, payments, availability checks. Real reservations need a venue-side system that can accept or refuse them, and Pearl Club has none. Booking is deliberately a request flow: Pearl logs a request, says clearly that nothing is confirmed, and leaves confirmation to the venue or hotel desk (11-CONCIERGE-AND-I18N).
+- Email or messaging hand-off for requests. The stored record plus the in-chat confirmation is the deliverable.
+- Fictional demo hotels or properties. Hotel service requests are not tied to any property.
 - User accounts, auth, saved trips, server-side chat persistence. State lives in React memory and is lost on refresh.
-- Multilingual UI. (The model replies in the user's language as a free side effect of one prompt line; nothing else is translated and it is not tested.)
-- Maps, geolocation, "near me". The city picker is the location input; travelers usually plan before they arrive.
+- Languages beyond the six supported. Place names, addresses and venue descriptions are never translated.
+- Map views, geolocation, "near me". The city picker is the location input; travelers usually plan before they arrive.
 - Products (fashion, home goods, etc.), curator profiles, blog content.
-- Cities beyond New York City, London, Paris, Los Angeles. Adding one later is a two-line change plus a re-scrape.
+- Cities beyond the 12 loaded: New York City, London, Paris, Los Angeles, Berlin, San Francisco, Austin, Barcelona, Amsterdam, Lisbon, Tokyo, Miami. Adding one later is a small change plus a re-scrape (03-DATA-PIPELINE section 1).
 - Dark mode. Pearl Club is light only.
 - An admin panel, analytics, or a CMS integration.
 - Automated unit-test suites. The QA layer is the eval script plus the manual script in 08.
@@ -80,3 +84,4 @@ What makes it read as "tool, not crutch": a hand-written data pipeline from the 
 | 08-TESTING-QA | Before calling anything done |
 | 09-GIT-WORKFLOW | Committing |
 | 10-DEPLOYMENT | Setting up Supabase and Vercel, shipping the link |
+| 11-CONCIERGE-AND-I18N | Multilingual behaviour, the request flow, and why booking is a request flow |

@@ -1,6 +1,23 @@
 # 04 · API Spec
 
-There is exactly one route: `POST /api/chat`. Everything else is static.
+There are two routes: `POST /api/chat` (this document) and `POST /api/request` (concierge requests, in 11-CONCIERGE-AND-I18N). Everything else is static.
+
+## As-built changes since the listings below were written
+
+The listings in this document are the original spec. The repo has since gained the changes below; **the source files are canonical**. Read them for current code.
+
+| Area | Change | Where |
+|---|---|---|
+| Request body | `lang` (`en`, `es`, `fr`, `de`, `ja`, `ur`) added; unknown values fall back to `en` | `validate.ts`, `types.ts` |
+| Cities | 12 city slugs instead of 4 | `catalog.ts`, `types.ts` |
+| Planner | New output fields `user_language`, `place_name`, `service_type`, `request_date`, `request_time`, `party_size`; intents `request_venue` and `request_hotel`; today's date is passed in the prompt; `search_query` is always English | `planner.ts` |
+| Route | Searches by venue name for `request_venue`; matches the named venue among candidates (`match-place.ts`); emits a `request` event; always shows the matched place's card | `api/chat/route.ts` |
+| Stream | New event `{"type":"request","prefill":{...}}` between `places` and `delta` | `types.ts`, 11-CONCIERGE-AND-I18N |
+| Prompt | Reply language line; BOOKING rule rewritten: Pearl logs requests, never says anything is booked, reserved or confirmed | `prompt.ts` |
+| Suggestions | Localized through the shared dictionary | `suggestions.ts` |
+| Rate limit | `allowRequest(ip, bucket, max)`: separate counters for `chat` (30 per 10 min) and `request` (10 per 10 min) | `rate-limit.ts` |
+| Supabase | `match_places` is callable by the publishable key (read-only); the app needs no secret key | 03-DATA-PIPELINE section 6 |
+
 
 All code in this document compiled, linted, and built (`tsc --noEmit`, `eslint`, `next build`) against Next.js 16.4.0, React 19.3.0, `openai@7.32.0`, `@supabase/supabase-js@2.117.3`. Copy it verbatim into the paths shown in each heading.
 

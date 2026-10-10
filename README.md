@@ -2,7 +2,7 @@
 
 **Live demo:** https://pearl-concierge.vercel.app
 
-A mobile-first chat assistant that recommends places hand-picked by Pearl Club's local curators. Pick a city, ask for anything from hidden gems to dinner tonight, and Pearl answers in a few sentences with cards for real Pearl Club places, each linking to its pearlclub.com page. It never invents a place: answers are grounded in 1,785 places scraped from pearlclub.com (with the founder's permission) for New York City, London, Paris, and Los Angeles.
+A mobile-first chat assistant that recommends places hand-picked by Pearl Club's local curators. Pick a city, ask for anything from hidden gems to dinner tonight, and Pearl answers in a few sentences with cards for real Pearl Club places, each linking to its pearlclub.com page. It never invents a place: answers are grounded in 3,375 places scraped from pearlclub.com (with the founder's permission) across 12 cities: New York City, London, Paris, Los Angeles, Berlin, San Francisco, Austin, Barcelona, Amsterdam, Lisbon, Tokyo and Miami. It speaks English, Spanish, French, German, Japanese and Urdu, and can log concierge and hotel service requests (it cannot make real bookings; see below).
 
 ## How it works
 
@@ -13,7 +13,9 @@ message ─► plan (intent, city, filters, search phrase) ─► vector search 
 - `scraper/scrape.py` reads Pearl Club's sitemaps and each place page's JSON-LD, writes `data/places.jsonl`.
 - `scraper/load.py` embeds each place once and upserts it into Supabase (pgvector).
 - `src/app/api/chat/route.ts` plans the turn, retrieves candidates with `match_places`, and streams an answer that may only mention those candidates, as NDJSON.
-- `src/components/` renders the chat, citation buttons, and place cards.
+- `src/app/api/request/route.ts` logs a concierge request through a validating database function. This is a request, not a booking: real reservations need a venue-side system, so Pearl says plainly that nothing is confirmed.
+- `src/lib/i18n.ts` holds every UI string in six languages; the planner translates the search phrase to English so retrieval works in any language.
+- `src/components/` renders the chat, citation buttons, place cards, and the inline request form.
 
 Full design and specs: [`docs/`](docs/00-OVERVIEW.md).
 
@@ -29,7 +31,7 @@ npm install
 cp .env.example .env.local
 ```
 
-Fill `.env.local` (see [`docs/10-DEPLOYMENT.md`](docs/10-DEPLOYMENT.md#1-environment-variables)), run the SQL in `supabase/migrations/` once in the Supabase SQL editor, then seed:
+Fill `.env.local` (see [`docs/10-DEPLOYMENT.md`](docs/10-DEPLOYMENT.md#1-environment-variables)), run both SQL files in `supabase/migrations/` once in the Supabase SQL editor (places, then concierge requests), then seed:
 
 ```bash
 python3 -m venv scraper/.venv && scraper/.venv/bin/pip install -r scraper/requirements.txt
@@ -65,5 +67,5 @@ Import the repo into Vercel, set `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_KEY
 
 ## Scope
 
-In: chat, grounded recommendations, place cards, city context, follow-up suggestions, mobile layout.
-Out: booking, accounts, saved history, maps, multilingual UI, products, other cities. See [`docs/00-OVERVIEW.md`](docs/00-OVERVIEW.md#explicit-non-goals).
+In: chat, grounded recommendations, place cards, city context, follow-up suggestions, mobile layout, six languages, concierge and hotel service requests (logged, never confirmed).
+Out: real booking and payments, email hand-off, accounts, saved history, map views, fictional demo hotels, products, other cities. See [`docs/00-OVERVIEW.md`](docs/00-OVERVIEW.md#explicit-non-goals) and [`docs/11-CONCIERGE-AND-I18N.md`](docs/11-CONCIERGE-AND-I18N.md).
