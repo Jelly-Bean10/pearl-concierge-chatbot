@@ -68,12 +68,25 @@ export async function POST(req: Request): Promise<Response> {
           plan.intent === "request_venue" && plan.placeName
             ? { ...plan, searchQuery: plan.placeName, categories: [], maxPriceLevel: null }
             : plan;
-        const rows = searchesPlaces ? await retrievePlaces(searchPlan, plan.wantsNewOptions ? shownPlaceIds : []) : [];
+        let rows = searchesPlaces ? await retrievePlaces(searchPlan, plan.wantsNewOptions ? shownPlaceIds : []) : [];
+
+        // 2a. A named venue with no city selected was searched across every city. The match decides the city;
+        // no match means we cannot tell which city they mean, so ask.
+        const matched = plan.intent === "request_venue" && plan.placeName ? findNamedPlace(rows, plan.placeName) : null;
+        if (plan.intent === "request_venue" && !plan.city) {
+          if (matched) {
+            plan.city = matched.city_slug;
+            rows = rows.filter((r) => r.city_slug === plan.city);
+          } else {
+            plan.intent = "need_city";
+            rows = [];
+          }
+          send({ type: "meta", intent: plan.intent, city: plan.city });
+        }
         const cards = rows.map((row, i) => toCard(row, i + 1));
         send({ type: "places", places: cards });
 
         // 2b. Booking intent: open the request form. A named venue must exist in the corpus to be requested.
-        const matched = plan.intent === "request_venue" && plan.placeName ? findNamedPlace(rows, plan.placeName) : null;
         const matchedRef = matched ? rows.indexOf(matched) + 1 : null;
         if (matched || plan.intent === "request_hotel") {
           send({

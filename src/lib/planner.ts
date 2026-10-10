@@ -21,6 +21,9 @@ export interface Plan {
   partySize: number | null;
 }
 
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] as const;
+const RELATIVE_DAYS = ["today", "tomorrow", ...WEEKDAYS] as const;
+
 const PLANNER_TIMEOUT_MS = 8_000;
 
 const PLAN_SCHEMA = {
@@ -38,6 +41,7 @@ const PLAN_SCHEMA = {
     "place_name",
     "service_type",
     "request_date",
+    "request_day",
     "request_time",
     "party_size",
   ],
@@ -56,10 +60,29 @@ const PLAN_SCHEMA = {
     place_name: { anyOf: [{ type: "string" }, { type: "null" }] },
     service_type: { anyOf: [{ type: "string", enum: SERVICE_TYPES }, { type: "null" }] },
     request_date: { anyOf: [{ type: "string" }, { type: "null" }] },
+    request_day: { anyOf: [{ type: "string", enum: RELATIVE_DAYS }, { type: "null" }] },
     request_time: { anyOf: [{ type: "string" }, { type: "null" }] },
     party_size: { anyOf: [{ type: "integer" }, { type: "null" }] },
   },
 } as const;
+
+/**
+ * Resolve "friday" / "tomorrow" to YYYY-MM-DD in code. The model only names the day; it never does date
+ * arithmetic (it was off by one). A weekday means its next occurrence after today.
+ */
+export function resolveRelativeDay(day: string, todayIso: string): string | null {
+  const key = day.toLowerCase();
+  const today = new Date(todayIso + "T12:00:00Z");
+  let offset: number;
+  if (key === "today") offset = 0;
+  else if (key === "tomorrow") offset = 1;
+  else {
+    const target = WEEKDAYS.indexOf(key as (typeof WEEKDAYS)[number]);
+    if (target < 0) return null;
+    offset = ((target - today.getUTCDay() + 6) % 7) + 1; // 1 to 7 days ahead
+  }
+  return new Date(today.getTime() + offset * 86_400_000).toISOString().slice(0, 10);
+}
 
 function plannerPrompt(selectedCity: CitySlug | null, today: string): string {
   const cities = CITIES.map((c) => `${c.slug} (${c.name})`).join(", ");
@@ -68,7 +91,7 @@ function plannerPrompt(selectedCity: CitySlug | null, today: string): string {
 Supported cities: ${cities}.
 Place categories: ${CATEGORY_SLUGS.join(", ")}.
 City currently selected in the app: ${selectedCity ?? "none"}.
-Today's date: ${today} (${new Date(today + "T12:00:00Z").toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" })}).
+Today's date: ${today}.
 
 The user may write in any language (for example Spanish, French, German, Japanese or Urdu). Understand it fully. City names may appear in the user's language ("París", "東京", "پیرس"): map them to the supported slug.
 
@@ -102,7 +125,8 @@ place_name: for "request_venue", the exact name of the venue the user named, oth
 
 service_type (request_hotel only, otherwise null): spa, late_checkout, airport_transfer, restaurant_reservation, or other.
 
-request_date: for request_venue and request_hotel, the date the user wants as YYYY-MM-DD, resolved from today's date ("Friday" is the next upcoming Friday, "tomorrow", "this weekend" is the coming Saturday). null when not said.
+request_day: for request_venue and request_hotel, when the user names a weekday or a relative day: "today", "tomorrow", or the weekday name in lowercase ("friday", "sunday"). "this weekend" is "saturday". The app computes the actual date from it, so do not do date arithmetic. null when the user gave no day or gave a calendar date.
+request_date: only when the user states an explicit calendar date ("October 20", "the 3rd of November"), as YYYY-MM-DD using today's date to pick the year. Otherwise null. null when not said.
 request_time: the time as 24-hour HH:MM ("8pm" is "20:00"). null when not said.
 party_size: number of people when said ("table for four" is 4), otherwise null.
 
@@ -131,8 +155,14 @@ function fallbackPlan(lastUserMessage: string, selectedCity: CitySlug | null): P
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+function resolveRequestDate(explicit: unknown, day: unknown, today: string): string | null {
+  if (typeof explicit === "string" && ISO_DATE.test(explicit) && explicit >= today) return explicit;
+  return typeof day === "string" ? resolveRelativeDay(day, today) : null;
+}
+
 export async function planTurn(messages: ChatTurn[], selectedCity: CitySlug | null): Promise<Plan> {
   const lastUser = messages[messages.length - 1].content;
+  const today = new Date().toISOString().slice(0, 10);
   try {
     const completion = await getOpenAI().chat.completions.create(
       {
@@ -143,10 +173,7 @@ export async function planTurn(messages: ChatTurn[], selectedCity: CitySlug | nu
           type: "json_schema",
           json_schema: { name: "plan", strict: true, schema: PLAN_SCHEMA },
         },
-        messages: [
-          { role: "system", content: plannerPrompt(selectedCity, new Date().toISOString().slice(0, 10)) },
-          ...messages.slice(-6),
-        ],
+        messages: [{ role: "system", content: plannerPrompt(selectedCity, today) }, ...messages.slice(-6)],
       },
       { signal: AbortSignal.timeout(PLANNER_TIMEOUT_MS) },
     );
@@ -162,13 +189,15 @@ export async function planTurn(messages: ChatTurn[], selectedCity: CitySlug | nu
       userLanguage: typeof raw.user_language === "string" ? raw.user_language.trim() || null : null,
       placeName: typeof raw.place_name === "string" ? raw.place_name.trim() || null : null,
       serviceType: SERVICE_TYPES.includes(raw.service_type) ? raw.service_type : null,
-      requestDate: typeof raw.request_date === "string" && ISO_DATE.test(raw.request_date) ? raw.request_date : null,
+      requestDate: resolveRequestDate(raw.request_date, raw.request_day, today),
       requestTime: typeof raw.request_time === "string" && HHMM.test(raw.request_time) ? raw.request_time : null,
       partySize:
         Number.isInteger(raw.party_size) && raw.party_size >= 1 && raw.party_size <= 20 ? raw.party_size : null,
     };
     // Searching needs a city. Never search without one.
-    if ((plan.intent === "recommend" || plan.intent === "request_venue") && !plan.city) plan.intent = "need_city";
+    // A named venue with no city is looked up across all cities by the route; a generic one needs a city.
+    if (plan.intent === "recommend" && !plan.city) plan.intent = "need_city";
+    if (plan.intent === "request_venue" && !plan.city && !plan.placeName) plan.intent = "need_city";
     return plan;
   } catch (err) {
     console.error(JSON.stringify({ event: "planner_failed", error: String(err) }));

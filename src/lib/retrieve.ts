@@ -41,7 +41,7 @@ async function embed(text: string): Promise<number[]> {
 
 async function matchPlaces(
   embedding: number[],
-  city: CitySlug,
+  city: CitySlug | null,
   categories: string[] | null,
   maxPriceLevel: number | null,
   excludeIds: number[],
@@ -63,7 +63,8 @@ async function matchPlaces(
  * If the category/price filters leave fewer than 3 results, retry once without them and append.
  */
 export async function retrievePlaces(plan: Plan, excludeIds: number[]): Promise<PlaceRow[]> {
-  if (!plan.city) return [];
+  // Only a named venue may be searched without a city (the route then resolves the city from the match).
+  if (!plan.city && !(plan.intent === "request_venue" && plan.placeName)) return [];
   const embedding = await embed(plan.searchQuery);
   let rows = await matchPlaces(embedding, plan.city, plan.categories, plan.maxPriceLevel, excludeIds);
 

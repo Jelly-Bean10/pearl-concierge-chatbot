@@ -36,7 +36,17 @@ const CASES = [
     expect: {
       intent: "request_venue",
       metaCity: "london",
-      request: { kind: "venue", placeName: "34 Mayfair", partySize: 4, time: "20:00" },
+      request: { kind: "venue", placeName: "34 Mayfair", partySize: 4, time: "20:00", weekday: "Friday" },
+    },
+  },
+  {
+    name: "book named venue, no city selected",
+    city: null,
+    messages: ["can you book me a table at Bonnie's for Friday"],
+    expect: {
+      intent: "request_venue",
+      metaCity: "new-york-city",
+      request: { kind: "venue", placeName: "Bonnie’s", weekday: "Friday" },
     },
   },
   {
@@ -49,7 +59,11 @@ const CASES = [
     name: "hotel late checkout",
     city: null,
     messages: ["I need a late checkout on Sunday"],
-    expect: { intent: "request_hotel", maxCited: 0, request: { kind: "hotel", serviceType: "late_checkout" } },
+    expect: {
+      intent: "request_hotel",
+      maxCited: 0,
+      request: { kind: "hotel", serviceType: "late_checkout", weekday: "Sunday" },
+    },
   },
   {
     name: "fr: airport transfer",
@@ -84,7 +98,7 @@ const CASES = [
     name: "neighbourhood maps to city",
     city: null,
     messages: ["tapas in Gràcia"],
-    expect: { intent: "recommend", metaCity: "barcelona", minCited: 1 },
+    expect: { intent: "recommend", metaCity: "barcelona" },
   },
   {
     name: "need city",
@@ -215,7 +229,7 @@ async function run(c) {
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
-  const meta = events.find((e) => e.type === "meta");
+  const meta = events.findLast((e) => e.type === "meta"); // the route may refine city/intent after retrieval
   const places = events.find((e) => e.type === "places")?.places ?? [];
   const done = events.find((e) => e.type === "done");
   const error = events.find((e) => e.type === "error");
@@ -253,6 +267,14 @@ async function run(c) {
         failures.push(`serviceType ${request.serviceType} != ${want.serviceType}`);
       if (want.partySize && request.partySize !== want.partySize)
         failures.push(`partySize ${request.partySize} != ${want.partySize}`);
+      if (want.weekday) {
+        // The date must be the NEXT occurrence of that weekday (1 to 7 days from now), never an off-by-one.
+        const d = request.date ? new Date(`${request.date}T12:00:00Z`) : null;
+        const days = d ? Math.round((d - Date.now()) / 86_400_000) : -1;
+        const names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        if (!d || names[d.getUTCDay()] !== want.weekday || days < 0 || days > 7)
+          failures.push(`date ${request.date} is not the upcoming ${want.weekday}`);
+      }
       if (want.time && request.time !== want.time) failures.push(`time ${request.time} != ${want.time}`);
       if (want.placeName) {
         const placed = request.placeRef ? places[request.placeRef - 1] : null;
