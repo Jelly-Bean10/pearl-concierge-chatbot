@@ -54,6 +54,9 @@ COLUMNS = [
     "lng",
     "tags",
     "lists",
+    "curator_name",
+    "curator_url",
+    "curator_avatar",
 ]
 
 

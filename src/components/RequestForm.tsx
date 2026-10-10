@@ -264,7 +264,7 @@ export default function RequestForm({ t, prefill, onLogged, onCancel }: Props) {
       <p className="rounded-md bg-mist px-3 py-2 text-sm leading-5 text-ink-soft">{f.notice}</p>
 
       {failed && (
-        <p className="rounded-lg border-l-4 border-danger bg-danger-bg px-4 py-3 text-sm text-danger" role="alert">
+        <p className="rounded-lg border border-danger/20 bg-danger-bg px-4 py-3 text-sm text-danger" role="alert">
           {f.submitFailed}
         </p>
       )}

@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { citedRefs } from "@/lib/citations";
-import { CHAT_MODEL, getOpenAI } from "@/lib/clients";
+import { ANSWER_MODEL, getOpenAI } from "@/lib/clients";
+import { writeFollowUps } from "@/lib/follow-ups";
 import { findNamedPlace } from "@/lib/match-place";
 import { planTurn } from "@/lib/planner";
 import { buildContext, SYSTEM_PROMPT } from "@/lib/prompt";
@@ -103,12 +104,19 @@ export async function POST(req: Request): Promise<Response> {
           });
         }
 
+        // Follow-up chips are written in parallel with the answer. Request flows need none: the form is the next step.
+        const offersChips = plan.intent === "recommend" || (plan.intent === "request_venue" && !matched);
+        const followUps =
+          offersChips && rows.length > 0
+            ? writeFollowUps(plan, rows, messages[messages.length - 1].content, lang)
+            : Promise.resolve(null);
+
         // 3. Stream the answer, grounded in exactly those candidates.
         const completion = await getOpenAI().chat.completions.create(
           {
-            model: CHAT_MODEL,
+            model: ANSWER_MODEL,
             stream: true,
-            temperature: 0.3,
+            temperature: 0.5,
             max_completion_tokens: 500,
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
@@ -120,7 +128,8 @@ export async function POST(req: Request): Promise<Response> {
         );
         let fullText = "";
         for await (const chunk of completion) {
-          const text = chunk.choices[0]?.delta?.content;
+          // The prompt bans em dashes; this catches the ones that slip through.
+          const text = chunk.choices[0]?.delta?.content?.replace(/\s*—\s*/g, ", ");
           if (text) {
             fullText += text;
             send({ type: "delta", text });
@@ -131,7 +140,9 @@ export async function POST(req: Request): Promise<Response> {
         const refs = citedRefs(fullText, cards.length);
         if (matchedRef && !refs.includes(matchedRef)) refs.unshift(matchedRef); // the form's place card always shows
         const cited = refs.map((ref) => cards[ref - 1]);
-        send({ type: "done", citedRefs: refs, suggestions: buildSuggestions(plan, cited, lang) });
+        const suggestions =
+          matched || plan.intent === "request_hotel" ? [] : ((await followUps) ?? buildSuggestions(plan, cited, lang));
+        send({ type: "done", citedRefs: refs, suggestions });
         console.log(
           JSON.stringify({
             event: "turn_done",

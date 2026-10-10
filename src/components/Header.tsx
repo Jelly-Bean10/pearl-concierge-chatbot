@@ -22,7 +22,7 @@ export default function Header({ t, lang, onLang, city, onCity, onReset }: Props
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <label className="relative flex h-9 items-center gap-1.5 rounded-full border border-line pe-2 ps-2.5 text-sm text-ink focus-within:border-ink hover:border-ink">
+          <label className="relative flex h-10 items-center gap-1.5 rounded-full border border-line pe-2 ps-2.5 text-sm text-ink focus-within:border-ink hover:border-ink">
             <svg
               viewBox="0 0 24 24"
               width="15"
@@ -52,7 +52,7 @@ export default function Header({ t, lang, onLang, city, onCity, onReset }: Props
             <button
               type="button"
               onClick={onReset}
-              className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted hover:text-ink"
+              className="-me-2 min-h-10 px-2 font-mono text-[11px] uppercase tracking-[0.08em] text-muted hover:text-ink"
             >
               {t.newChat}
             </button>
@@ -71,7 +71,7 @@ export default function Header({ t, lang, onLang, city, onCity, onReset }: Props
                 type="button"
                 aria-pressed={active}
                 onClick={() => onCity(active ? null : c.slug)}
-                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors ${
+                className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors ${
                   active ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink hover:border-ink"
                 }`}
               >

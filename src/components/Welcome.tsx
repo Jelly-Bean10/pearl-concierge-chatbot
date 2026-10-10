@@ -1,6 +1,7 @@
 import { cityBySlug } from "@/lib/catalog";
 import type { Dict } from "@/lib/i18n";
 import type { CitySlug } from "@/lib/types";
+import { ArrowRight } from "./icons";
 
 interface Props {
   t: Dict;
@@ -12,32 +13,33 @@ export default function Welcome({ t, city, onPick }: Props) {
   const name = cityBySlug(city)?.name;
 
   return (
-    <section className="flex flex-col gap-8 pt-4 sm:pt-10">
-      <div className="flex flex-col gap-3">
-        <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">{t.welcomeLabel}</p>
-        <h1 className="font-display text-[34px] font-medium leading-[38px] tracking-[-0.01em] text-ink sm:text-[44px] sm:leading-[48px]">
+    <section className="flex flex-col gap-10 pt-6 sm:pt-14">
+      <div className="flex flex-col gap-4">
+        <h1 className="text-balance font-display text-[40px] font-medium leading-[44px] tracking-[-0.02em] text-ink sm:text-[56px] sm:leading-[58px]">
           {t.welcomeTitle(name)}
         </h1>
-        <p className="max-w-[52ch] text-base leading-[26px] text-ink-soft">{t.welcomeBody}</p>
+        <p className="max-w-[46ch] text-[17px] leading-7 text-ink-soft">{t.welcomeBody}</p>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <ul className="border-t border-line">
         {t.starters.map((s) => (
-          <button
-            key={s.emoji}
-            type="button"
-            onClick={() => onPick(s.prompt(name))}
-            className="flex items-start gap-3 rounded-xl border border-line bg-paper p-4 text-start transition-colors hover:border-ink hover:bg-mist"
-          >
-            <span className="text-xl leading-6" aria-hidden>
-              {s.emoji}
-            </span>
-            <span className="flex flex-col gap-0.5">
-              <span className="text-[15px] font-bold leading-6 text-ink">{s.label}</span>
-              <span className="text-sm leading-5 text-muted">{s.hint}</span>
-            </span>
-          </button>
+          <li key={s.label} className="border-b border-line">
+            <button
+              type="button"
+              onClick={() => onPick(s.prompt(name))}
+              className="group flex min-h-16 w-full items-center gap-4 py-4 text-start"
+            >
+              <span className="flex flex-1 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
+                <span className="text-[17px] font-semibold leading-6 text-ink">{s.label}</span>
+                <span className="text-sm leading-5 text-muted">{s.hint}</span>
+              </span>
+              <ArrowRight
+                size={18}
+                className="shrink-0 text-muted transition-transform duration-200 ease-out group-hover:translate-x-1 group-hover:text-ink rtl:-scale-x-100 rtl:group-hover:-translate-x-1"
+              />
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </section>
   );
 }

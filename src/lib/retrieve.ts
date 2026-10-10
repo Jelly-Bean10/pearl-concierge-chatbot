@@ -28,6 +28,9 @@ export interface PlaceRow {
   map_url: string | null;
   tags: string[];
   lists: string[];
+  curator_name: string | null;
+  curator_url: string | null;
+  curator_avatar: string | null;
   similarity: number;
 }
 
@@ -109,6 +112,14 @@ export function toCard(row: PlaceRow, ref: number): PlaceCard {
     websiteUrl: row.website_url,
     mapUrl: row.map_url,
     tags: row.tags.slice(0, 3),
+    curator:
+      row.curator_name && row.curator_url
+        ? {
+            name: row.curator_name,
+            url: row.curator_url,
+            avatarUrl: row.curator_avatar ? `${row.curator_avatar}?w=64&h=64&fit=crop&auto=format` : null,
+          }
+        : null,
   };
 }
 

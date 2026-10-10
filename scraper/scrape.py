@@ -75,6 +75,7 @@ SOCIAL_HOSTS = (
     "twitter.com",
     "pinterest.com",
 )
+CURATOR_HREF_RE = re.compile(r"^/cities/[a-z0-9-]+/curators/[a-z0-9-]+$")
 PLACE_URL_RE = re.compile(
     r"^https://www\.pearlclub\.com/cities/([a-z0-9-]+)/([a-z0-9-]+)/([a-z0-9-]+)$"
 )
@@ -221,6 +222,25 @@ def parse_place(sitemap_url: str, html: str) -> dict | None:
             elif a["href"].startswith("/places-"):
                 tags.append(a["href"].removeprefix("/places-"))
 
+    # "Curator spotlight": the local who recommends this place. Pages credited only to Pearl Club itself
+    # (/cities/global/curators/pearl-club) get no curator.
+    curator_name = curator_url = curator_avatar = None
+    spotlight = soup.find(
+        lambda t: t.name in ("h2", "h3") and "Curator spotlight" in t.get_text()
+    )
+    link = (
+        spotlight.find_next("a", href=CURATOR_HREF_RE) if spotlight else None
+    )
+    if link and not link["href"].startswith("/cities/global/"):
+        names = list(link.stripped_strings)
+        curator_name = names[0] if names else None
+        curator_url = BASE + link["href"]
+        avatar = next(
+            (i["src"] for i in link.find_all("img", src=True) if i["src"].startswith("https://")),
+            None,
+        )
+        curator_avatar = avatar.split("?")[0] if avatar else None
+
     return {
         "url": canonical_url(sitemap_url),
         "slug": slug,
@@ -245,6 +265,9 @@ def parse_place(sitemap_url: str, html: str) -> dict | None:
         "lng": geo.get("longitude"),
         "tags": sorted(set(tags)),
         "lists": sorted(set(lists)),
+        "curator_name": curator_name,
+        "curator_url": curator_url,
+        "curator_avatar": curator_avatar,
     }
 
 

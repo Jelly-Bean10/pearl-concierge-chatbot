@@ -49,6 +49,7 @@ export interface PlaceCard {
   websiteUrl: string | null;
   mapUrl: string | null;
   tags: string[];
+  curator: { name: string; url: string; avatarUrl: string | null } | null; // the local who recommends it
 }
 
 export type Intent =

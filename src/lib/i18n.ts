@@ -35,10 +35,9 @@ export interface Dict {
   newChat: string;
   city: string;
   language: string;
-  welcomeLabel: string;
   welcomeTitle: CityFn;
   welcomeBody: string;
-  starters: { emoji: string; label: string; hint: string; prompt: CityFn }[];
+  starters: { label: string; hint: string; prompt: CityFn }[];
   placeholder: string;
   footer: string;
   messageLabel: string;
@@ -50,6 +49,7 @@ export interface Dict {
   website: string;
   map: string;
   requestThis: string;
+  pickedBy: (curator: string) => string;
   errors: Record<ErrorCode | "network", string>;
   sug: {
     cheaper: string;
@@ -100,31 +100,26 @@ const en: Dict = {
   newChat: "New chat",
   city: "City",
   language: "Language",
-  welcomeLabel: "Hi, I'm Pearl",
   welcomeTitle: (c) => (c ? `Where are you headed in ${c}?` : "Where are you headed?"),
   welcomeBody:
-    "Ask me for places hand-picked by Pearl Club's local curators. Every suggestion links to its Pearl Club guide. Pick a city above, or start with one of these.",
+    "Ask the way you'd text a friend who lives there. Every answer comes from places Pearl Club's local curators recommend, and links to their page.",
   starters: [
     {
-      emoji: "💎",
       label: "Find hidden gems",
       hint: "Local favourites, off the tourist trail",
       prompt: (c) => `Find me some hidden gems${c ? ` in ${c}` : ""}`,
     },
     {
-      emoji: "🎟️",
       label: "Book an experience",
       hint: "Tours, shows, classes and culture",
       prompt: (c) => `I want to book an experience${c ? ` in ${c}` : ""}`,
     },
     {
-      emoji: "🍽️",
       label: "Dinner tonight",
       hint: "From neighbourhood spots to special nights",
       prompt: (c) => `Where should I have dinner tonight${c ? ` in ${c}` : ""}?`,
     },
     {
-      emoji: "🛏️",
       label: "Where to stay",
       hint: "Hotels with character",
       prompt: (c) => `Where should I stay${c ? ` in ${c}` : ""}?`,
@@ -141,6 +136,7 @@ const en: Dict = {
   website: "Website",
   map: "Map",
   requestThis: "Request this",
+  pickedBy: (n) => `Picked by ${n}`,
   errors: {
     bad_request: "That message couldn't be sent. Please check it and try again.",
     rate_limited: "You're sending messages quickly. Please wait a minute and try again.",
@@ -218,7 +214,7 @@ const en: Dict = {
     submit: "Send request",
     submitting: "Sending…",
     cancel: "Cancel",
-    notice: "This logs a request. It is not a confirmed booking or reservation.",
+    notice: "Nothing is booked until they confirm with you directly.",
     fieldErrors: {
       required: "Required",
       email: "Enter a valid email",
@@ -229,9 +225,9 @@ const en: Dict = {
       service: "Choose a service",
     },
     submitFailed: "Couldn't log your request. Please try again.",
-    doneTitle: "Request logged. Not confirmed.",
+    doneTitle: "Request logged",
     doneBody: (what, id) =>
-      `Your request for ${what} is logged (ref #${id}). It would be passed to the venue or hotel desk, but this is not a confirmed reservation. Nothing is booked until they confirm with you directly.`,
+      `${what}, ref #${id}. The venue or hotel confirms directly, and nothing is booked until they do.`,
     cancelled: "Request cancelled.",
   },
 };
@@ -241,31 +237,26 @@ const es: Dict = {
   newChat: "Nuevo chat",
   city: "Ciudad",
   language: "Idioma",
-  welcomeLabel: "Hola, soy Pearl",
   welcomeTitle: (c) => (c ? `¿A dónde vas en ${c}?` : "¿A dónde vas?"),
   welcomeBody:
-    "Pídeme lugares elegidos por los curadores locales de Pearl Club. Cada sugerencia enlaza con su guía en Pearl Club. Elige una ciudad arriba o empieza con una de estas opciones.",
+    "Pregunta como le escribirías a un amigo que vive allí. Cada respuesta sale de los lugares que recomiendan los curadores locales de Pearl Club y enlaza a su página.",
   starters: [
     {
-      emoji: "💎",
       label: "Descubrir joyas ocultas",
       hint: "Favoritos locales, lejos de las rutas turísticas",
       prompt: (c) => `Encuéntrame algunas joyas ocultas${c ? ` en ${c}` : ""}`,
     },
     {
-      emoji: "🎟️",
       label: "Reservar una experiencia",
       hint: "Tours, espectáculos, clases y cultura",
       prompt: (c) => `Quiero reservar una experiencia${c ? ` en ${c}` : ""}`,
     },
     {
-      emoji: "🍽️",
       label: "Cena de esta noche",
       hint: "De locales de barrio a noches especiales",
       prompt: (c) => `¿Dónde puedo cenar esta noche${c ? ` en ${c}` : ""}?`,
     },
     {
-      emoji: "🛏️",
       label: "Dónde alojarse",
       hint: "Hoteles con carácter",
       prompt: (c) => `¿Dónde me alojo${c ? ` en ${c}` : ""}?`,
@@ -282,6 +273,7 @@ const es: Dict = {
   website: "Sitio web",
   map: "Mapa",
   requestThis: "Solicitar esto",
+  pickedBy: (n) => `Elegido por ${n}`,
   errors: {
     bad_request: "No se pudo enviar ese mensaje. Revísalo e inténtalo de nuevo.",
     rate_limited: "Estás enviando mensajes muy rápido. Espera un minuto e inténtalo de nuevo.",
@@ -359,7 +351,7 @@ const es: Dict = {
     submit: "Enviar solicitud",
     submitting: "Enviando…",
     cancel: "Cancelar",
-    notice: "Esto registra una solicitud. No es una reserva confirmada.",
+    notice: "No hay nada reservado hasta que te lo confirmen directamente.",
     fieldErrors: {
       required: "Obligatorio",
       email: "Introduce un correo válido",
@@ -370,9 +362,9 @@ const es: Dict = {
       service: "Elige un servicio",
     },
     submitFailed: "No se pudo registrar tu solicitud. Inténtalo de nuevo.",
-    doneTitle: "Solicitud registrada. No confirmada.",
+    doneTitle: "Solicitud registrada",
     doneBody: (what, id) =>
-      `Tu solicitud de ${what} está registrada (ref. #${id}). Se pasaría al lugar o a la recepción del hotel, pero no es una reserva confirmada. No hay nada reservado hasta que ellos te lo confirmen directamente.`,
+      `${what}, ref. #${id}. El lugar o el hotel lo confirma directamente y no hay nada reservado hasta entonces.`,
     cancelled: "Solicitud cancelada.",
   },
 };
@@ -382,31 +374,26 @@ const fr: Dict = {
   newChat: "Nouvelle discussion",
   city: "Ville",
   language: "Langue",
-  welcomeLabel: "Bonjour, je suis Pearl",
   welcomeTitle: (c) => (c ? `Où allez-vous à ${c} ?` : "Où allez-vous ?"),
   welcomeBody:
-    "Demandez-moi des adresses choisies par les curateurs locaux de Pearl Club. Chaque suggestion renvoie vers son guide Pearl Club. Choisissez une ville ci-dessus ou commencez par l'une de ces idées.",
+    "Demandez comme vous écririez à un ami qui vit sur place. Chaque réponse vient des adresses recommandées par les curateurs locaux de Pearl Club, avec un lien vers leur page.",
   starters: [
     {
-      emoji: "💎",
       label: "Trouver des pépites",
       hint: "Favoris locaux, hors des sentiers touristiques",
       prompt: (c) => `Trouve-moi des pépites${c ? ` à ${c}` : ""}`,
     },
     {
-      emoji: "🎟️",
       label: "Réserver une expérience",
       hint: "Visites, spectacles, cours et culture",
       prompt: (c) => `Je veux réserver une expérience${c ? ` à ${c}` : ""}`,
     },
     {
-      emoji: "🍽️",
       label: "Dîner ce soir",
       hint: "Des adresses de quartier aux soirées spéciales",
       prompt: (c) => `Où dîner ce soir${c ? ` à ${c}` : ""} ?`,
     },
     {
-      emoji: "🛏️",
       label: "Où dormir",
       hint: "Des hôtels de caractère",
       prompt: (c) => `Où dormir${c ? ` à ${c}` : ""} ?`,
@@ -423,6 +410,7 @@ const fr: Dict = {
   website: "Site web",
   map: "Carte",
   requestThis: "Faire une demande",
+  pickedBy: (n) => `Choisi par ${n}`,
   errors: {
     bad_request: "Ce message n'a pas pu être envoyé. Vérifiez-le et réessayez.",
     rate_limited: "Vous envoyez des messages trop vite. Attendez une minute et réessayez.",
@@ -500,7 +488,7 @@ const fr: Dict = {
     submit: "Envoyer la demande",
     submitting: "Envoi…",
     cancel: "Annuler",
-    notice: "Cela enregistre une demande. Ce n'est pas une réservation confirmée.",
+    notice: "Rien n'est réservé tant qu'on ne vous l'a pas confirmé directement.",
     fieldErrors: {
       required: "Obligatoire",
       email: "Saisissez un e-mail valide",
@@ -511,9 +499,9 @@ const fr: Dict = {
       service: "Choisissez un service",
     },
     submitFailed: "Impossible d'enregistrer votre demande. Réessayez.",
-    doneTitle: "Demande enregistrée. Non confirmée.",
+    doneTitle: "Demande enregistrée",
     doneBody: (what, id) =>
-      `Votre demande pour ${what} est enregistrée (réf. n° ${id}). Elle serait transmise au lieu ou à la réception de l'hôtel, mais ce n'est pas une réservation confirmée. Rien n'est réservé tant qu'ils ne vous ont pas confirmé directement.`,
+      `${what}, réf. n° ${id}. Le lieu ou l'hôtel confirme directement, et rien n'est réservé d'ici là.`,
     cancelled: "Demande annulée.",
   },
 };
@@ -523,31 +511,26 @@ const de: Dict = {
   newChat: "Neuer Chat",
   city: "Stadt",
   language: "Sprache",
-  welcomeLabel: "Hallo, ich bin Pearl",
   welcomeTitle: (c) => (c ? `Wohin geht es in ${c}?` : "Wohin soll es gehen?"),
   welcomeBody:
-    "Frag mich nach Orten, die von den lokalen Kuratoren von Pearl Club ausgewählt wurden. Jeder Vorschlag verlinkt auf seinen Pearl-Club-Guide. Wähle oben eine Stadt oder starte mit einer dieser Ideen.",
+    "Frag so, wie du einem Freund schreiben würdest, der dort wohnt. Jede Antwort stammt aus den Orten, die die lokalen Kuratoren von Pearl Club empfehlen, und verlinkt auf ihre Seite.",
   starters: [
     {
-      emoji: "💎",
       label: "Geheimtipps finden",
       hint: "Lokale Favoriten abseits der Touristenpfade",
       prompt: (c) => `Finde mir ein paar Geheimtipps${c ? ` in ${c}` : ""}`,
     },
     {
-      emoji: "🎟️",
       label: "Erlebnis buchen",
       hint: "Touren, Shows, Kurse und Kultur",
       prompt: (c) => `Ich möchte ein Erlebnis buchen${c ? ` in ${c}` : ""}`,
     },
     {
-      emoji: "🍽️",
       label: "Abendessen heute",
       hint: "Vom Kiez-Lokal bis zum besonderen Abend",
       prompt: (c) => `Wo kann ich heute Abend essen${c ? ` in ${c}` : ""}?`,
     },
     {
-      emoji: "🛏️",
       label: "Wo übernachten",
       hint: "Hotels mit Charakter",
       prompt: (c) => `Wo soll ich übernachten${c ? ` in ${c}` : ""}?`,
@@ -564,6 +547,7 @@ const de: Dict = {
   website: "Website",
   map: "Karte",
   requestThis: "Anfrage senden",
+  pickedBy: (n) => `Empfohlen von ${n}`,
   errors: {
     bad_request: "Diese Nachricht konnte nicht gesendet werden. Bitte prüfe sie und versuche es erneut.",
     rate_limited: "Du sendest Nachrichten sehr schnell. Bitte warte eine Minute und versuche es erneut.",
@@ -641,7 +625,7 @@ const de: Dict = {
     submit: "Anfrage senden",
     submitting: "Wird gesendet…",
     cancel: "Abbrechen",
-    notice: "Dies erfasst eine Anfrage. Es ist keine bestätigte Buchung oder Reservierung.",
+    notice: "Gebucht ist erst etwas, wenn man es dir direkt bestätigt.",
     fieldErrors: {
       required: "Pflichtfeld",
       email: "Gültige E-Mail eingeben",
@@ -652,9 +636,9 @@ const de: Dict = {
       service: "Service wählen",
     },
     submitFailed: "Deine Anfrage konnte nicht erfasst werden. Bitte versuche es erneut.",
-    doneTitle: "Anfrage erfasst. Nicht bestätigt.",
+    doneTitle: "Anfrage erfasst",
     doneBody: (what, id) =>
-      `Deine Anfrage für ${what} ist erfasst (Ref. #${id}). Sie würde an den Ort oder die Hotelrezeption weitergeleitet, ist aber keine bestätigte Reservierung. Gebucht ist erst etwas, wenn sie es dir direkt bestätigen.`,
+      `${what}, Ref. #${id}. Der Ort oder das Hotel bestätigt direkt, bis dahin ist nichts gebucht.`,
     cancelled: "Anfrage abgebrochen.",
   },
 };
@@ -664,31 +648,26 @@ const ja: Dict = {
   newChat: "新しいチャット",
   city: "都市",
   language: "言語",
-  welcomeLabel: "こんにちは、Pearlです",
   welcomeTitle: (c) => (c ? `${c}でどこへ行きますか？` : "どこへ行きますか？"),
   welcomeBody:
-    "Pearl Clubの地元キュレーターが選んだ場所をご紹介します。すべての提案にはPearl Clubのガイドへのリンクがあります。上で都市を選ぶか、次のどれかから始めてください。",
+    "現地に住む友だちに聞くように、気軽に質問してください。答えはすべてPearl Clubの地元キュレーターがすすめる場所から選ばれ、各ページにリンクしています。",
   starters: [
     {
-      emoji: "💎",
       label: "穴場を探す",
       hint: "観光客の少ない地元のお気に入り",
       prompt: (c) => `${c ? `${c}の` : ""}穴場を教えて`,
     },
     {
-      emoji: "🎟️",
       label: "体験を予約する",
       hint: "ツアー、ショー、レッスン、カルチャー",
       prompt: (c) => `${c ? `${c}で` : ""}体験を予約したい`,
     },
     {
-      emoji: "🍽️",
       label: "今夜のディナー",
       hint: "近所の名店から特別な夜まで",
       prompt: (c) => `今夜${c ? `${c}で` : ""}ディナーに行くならどこがいい？`,
     },
     {
-      emoji: "🛏️",
       label: "おすすめの宿泊先",
       hint: "個性のあるホテル",
       prompt: (c) => `${c ? `${c}で` : ""}どこに泊まるのがいい？`,
@@ -705,6 +684,7 @@ const ja: Dict = {
   website: "ウェブサイト",
   map: "地図",
   requestThis: "リクエストする",
+  pickedBy: (n) => `${n}のおすすめ`,
   errors: {
     bad_request: "メッセージを送信できませんでした。内容を確認してもう一度お試しください。",
     rate_limited: "メッセージの送信が早すぎます。1分ほど待ってからもう一度お試しください。",
@@ -782,7 +762,7 @@ const ja: Dict = {
     submit: "リクエストを送信",
     submitting: "送信中…",
     cancel: "キャンセル",
-    notice: "これはリクエストの記録です。予約の確定ではありません。",
+    notice: "先方から直接確認があるまで、予約は確定しません。",
     fieldErrors: {
       required: "必須です",
       email: "有効なメールアドレスを入力してください",
@@ -793,9 +773,8 @@ const ja: Dict = {
       service: "サービスを選択してください",
     },
     submitFailed: "リクエストを記録できませんでした。もう一度お試しください。",
-    doneTitle: "リクエストを記録しました。予約は確定していません。",
-    doneBody: (what, id) =>
-      `${what}のリクエストを記録しました（参照番号 #${id}）。お店または ホテルのフロントに伝えられる想定ですが、予約の確定ではありません。先方から直接確認があるまで、何も予約されていません。`,
+    doneTitle: "リクエストを記録しました",
+    doneBody: (what, id) => `${what}（参照番号 #${id}）。お店またはホテルから直接確認があるまで、予約は確定しません。`,
     cancelled: "リクエストをキャンセルしました。",
   },
 };
@@ -805,31 +784,26 @@ const ur: Dict = {
   newChat: "نئی چیٹ",
   city: "شہر",
   language: "زبان",
-  welcomeLabel: "السلام علیکم، میں پرل ہوں",
   welcomeTitle: (c) => (c ? `${c} میں آپ کہاں جا رہے ہیں؟` : "آپ کہاں جا رہے ہیں؟"),
   welcomeBody:
-    "مجھ سے پرل کلب کے مقامی کیوریٹرز کی چنی ہوئی جگہوں کے بارے میں پوچھیں۔ ہر تجویز اپنی پرل کلب گائیڈ سے جڑی ہے۔ اوپر سے شہر چنیں، یا ان میں سے کسی سے شروع کریں۔",
+    "ایسے پوچھیں جیسے وہاں رہنے والے کسی دوست کو میسج کرتے ہیں۔ ہر جواب پرل کلب کے مقامی کیوریٹرز کی تجویز کردہ جگہوں سے آتا ہے اور ان کے صفحے سے جڑا ہوتا ہے۔",
   starters: [
     {
-      emoji: "💎",
       label: "چھپے ہوئے ہیرے تلاش کریں",
       hint: "مقامی پسندیدہ جگہیں، سیاحوں کے راستے سے ہٹ کر",
       prompt: (c) => `مجھے${c ? ` ${c} میں` : ""} کچھ چھپی ہوئی بہترین جگہیں بتائیں`,
     },
     {
-      emoji: "🎟️",
       label: "تجربہ بک کریں",
       hint: "ٹورز، شوز، کلاسز اور ثقافت",
       prompt: (c) => `میں${c ? ` ${c} میں` : ""} ایک تجربہ بک کرنا چاہتا ہوں`,
     },
     {
-      emoji: "🍽️",
       label: "آج رات کا کھانا",
       hint: "محلے کی جگہوں سے خاص شاموں تک",
       prompt: (c) => `آج رات${c ? ` ${c} میں` : ""} کھانا کہاں کھاؤں؟`,
     },
     {
-      emoji: "🛏️",
       label: "کہاں ٹھہریں",
       hint: "منفرد انداز کے ہوٹل",
       prompt: (c) => `مجھے${c ? ` ${c} میں` : ""} کہاں ٹھہرنا چاہیے؟`,
@@ -846,6 +820,7 @@ const ur: Dict = {
   website: "ویب سائٹ",
   map: "نقشہ",
   requestThis: "درخواست کریں",
+  pickedBy: (n) => `${n} کی پسند`,
   errors: {
     bad_request: "یہ پیغام نہیں بھیجا جا سکا۔ براہ کرم اسے چیک کر کے دوبارہ کوشش کریں۔",
     rate_limited: "آپ بہت تیزی سے پیغامات بھیج رہے ہیں۔ براہ کرم ایک منٹ رک کر دوبارہ کوشش کریں۔",
@@ -923,7 +898,7 @@ const ur: Dict = {
     submit: "درخواست بھیجیں",
     submitting: "بھیجا جا رہا ہے…",
     cancel: "منسوخ کریں",
-    notice: "یہ ایک درخواست درج کرتا ہے۔ یہ تصدیق شدہ بکنگ یا ریزرویشن نہیں ہے۔",
+    notice: "جب تک وہ آپ سے براہ راست تصدیق نہ کریں، کچھ بھی بک نہیں ہے۔",
     fieldErrors: {
       required: "ضروری ہے",
       email: "درست ای میل درج کریں",
@@ -934,9 +909,9 @@ const ur: Dict = {
       service: "سروس منتخب کریں",
     },
     submitFailed: "آپ کی درخواست درج نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔",
-    doneTitle: "درخواست درج ہو گئی۔ تصدیق شدہ نہیں۔",
+    doneTitle: "درخواست درج ہو گئی",
     doneBody: (what, id) =>
-      `${what} کے لیے آپ کی درخواست درج ہو گئی ہے (حوالہ نمبر #${id})۔ اسے مقام یا ہوٹل ڈیسک تک پہنچایا جائے گا، لیکن یہ تصدیق شدہ ریزرویشن نہیں ہے۔ جب تک وہ آپ سے براہ راست تصدیق نہ کریں، کچھ بھی بک نہیں ہے۔`,
+      `${what}، حوالہ نمبر #${id}۔ مقام یا ہوٹل براہ راست تصدیق کرے گا، اس وقت تک کچھ بھی بک نہیں ہے۔`,
     cancelled: "درخواست منسوخ کر دی گئی۔",
   },
 };

@@ -46,3 +46,6 @@ scraper/.venv/
 scraper/.cache/
 __pycache__/
 supabase/.temp/
+.claude/
+.playwright-mcp/
+.impeccable/

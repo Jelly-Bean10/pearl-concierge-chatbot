@@ -50,3 +50,20 @@ export const CATEGORIES: Record<string, string> = {
 };
 
 export const CATEGORY_SLUGS = Object.keys(CATEGORIES);
+
+// Categories where asking the venue for a table, a slot or a visit makes sense. Shops, cafes, parks and
+// neighbourhoods get no "Request this" button.
+export const REQUESTABLE_CATEGORIES = new Set([
+  "dinner",
+  "lunch",
+  "breakfast",
+  "bars",
+  "nightlife",
+  "outdoor-drinks",
+  "late-night-food",
+  "live-entertainment",
+  "activities",
+  "arts-and-culture",
+  "health-and-wellness",
+  "stays",
+]);

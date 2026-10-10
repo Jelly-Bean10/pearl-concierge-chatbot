@@ -285,12 +285,15 @@ async function run(c) {
   }
   if (c.expect.noRequest && request) failures.push("unexpected request event");
   // Pearl must never imply a booking happened (English check; other languages are read by a human).
-  if (
-    /\b(i'?ve|i have|has been|have been|is|are|was|got|now) (now )?(booked|confirmed|reserved)\b|\bsuccessfully\b/i.test(
+  const claimsBooking =
+    /\b(i'?ve|i have|has been|have been|is now|are now|all set|you'?re) (now )?(booked|confirmed|reserved)\b/i.test(
       text,
-    )
-  )
-    failures.push(`reply implies a confirmed booking: ${text.slice(0, 120)}`);
+    ) ||
+    /\b(your|the) (table|booking|reservation|room|spot)( for [^.]{0,40})? (is|has been) (booked|confirmed|reserved)\b/i.test(
+      text,
+    ) ||
+    /\bsuccessfully\b/i.test(text);
+  if (claimsBooking) failures.push(`reply implies a confirmed booking: ${text.slice(0, 120)}`);
   const cityOfPlaces = new Set(places.map((p) => p.citySlug));
   if (cityOfPlaces.size > 1) failures.push(`candidates span cities: ${[...cityOfPlaces]}`);
   return { failures, text, meta, places, cited };

@@ -12,7 +12,11 @@ One request to `/api/chat` does three things:
 
 1. **Plan.** A small structured-output call turns the message and recent history into an intent, a city, filters, and an English search phrase. This is what makes "something cheaper", "coffee in Brooklyn" and non-English messages work.
 2. **Retrieve.** The phrase is embedded and matched against the places table in Postgres (pgvector), filtered by city.
-3. **Answer.** The reply is streamed, and the model may only mention the retrieved places. Each mention carries a `[[n]]` marker, and the cards shown are built from database rows for those markers only. A place the model names without a marker never gets a card, and an unknown marker is dropped.
+3. **Answer.** The reply is streamed, and the model may only mention the retrieved places. Each mention carries a `[[n]]` marker, and the cards shown are built from database rows for those markers only. A place the model names without a marker never gets a card, and an unknown marker is dropped. In the reply, a cited name becomes a link that scrolls to its card.
+
+While the answer streams, a second small call writes three follow-up suggestions for that specific reply. If it fails or times out, fixed fallbacks are used.
+
+Each card credits the Pearl Club local who recommends the place (the "Curator spotlight" on its page), and the reply may mention them by first name. About 70% of places have a named curator.
 
 The place data was scraped from Pearl Club's sitemaps and the JSON-LD on each place page (`scraper/`). `load.py` embeds each place once and upserts it, so re-runs are free.
 
@@ -31,7 +35,7 @@ npm install
 cp .env.example .env.local   # fill in the values
 ```
 
-Run the two files in `supabase/migrations/` in the Supabase SQL editor, then load the data:
+Run the files in `supabase/migrations/` in order in the Supabase SQL editor, then load the data:
 
 ```bash
 python3 -m venv scraper/.venv && scraper/.venv/bin/pip install -r scraper/requirements.txt
@@ -46,7 +50,8 @@ npm run dev
 | `SUPABASE_URL`        | app, loader |                                                     |
 | `SUPABASE_KEY`        | app         | Publishable key.                                    |
 | `SUPABASE_SECRET_KEY` | loader only | Never set on Vercel.                                |
-| `OPENAI_CHAT_MODEL`   | app         | Optional, defaults to `gpt-4.1-mini`.               |
+| `OPENAI_CHAT_MODEL`   | app         | Planner and chips. Defaults to `gpt-4.1-mini`.      |
+| `OPENAI_ANSWER_MODEL` | app         | The reply. Defaults to `gpt-4.1`.                   |
 
 ## Checks
 
@@ -72,6 +77,6 @@ scraper/      scrape.py, load.py
 supabase/     migrations
 scripts/      eval.mjs
 src/app/api/  chat (streaming RAG), request (concierge requests)
-src/lib/      planner, retrieve, prompt, i18n, request validation
+src/lib/      planner, retrieve, prompt, follow-ups, i18n, request validation
 src/components/
 ```

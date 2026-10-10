@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || "gpt-4.1-mini";
+// The streamed answer is the only text users read closely, so it may use a stronger model than the planner.
+export const ANSWER_MODEL = process.env.OPENAI_ANSWER_MODEL || "gpt-4.1";
 // Must match EMBEDDING_MODEL in scraper/load.py and vector(1536) in the migration.
 export const EMBEDDING_MODEL = "text-embedding-3-small";
 
