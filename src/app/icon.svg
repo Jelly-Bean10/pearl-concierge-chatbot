@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="body" cx="40%" cy="36%" r="68%">
+      <stop offset="0" stop-color="#3a3542"/>
+      <stop offset="0.55" stop-color="#17151b"/>
+      <stop offset="1" stop-color="#050506"/>
+    </radialGradient>
+    <radialGradient id="blue" cx="30%" cy="62%" r="45%">
+      <stop offset="0" stop-color="#645cff" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#645cff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="red" cx="72%" cy="74%" r="42%">
+      <stop offset="0" stop-color="#ff4d4f" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ff4d4f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="29" fill="url(#body)"/>
+  <circle cx="32" cy="32" r="29" fill="url(#blue)"/>
+  <circle cx="32" cy="32" r="29" fill="url(#red)"/>
+  <ellipse cx="23" cy="20" rx="9" ry="6.5" fill="url(#shine)" transform="rotate(-30 23 20)"/>
+  <circle cx="32" cy="32" r="28.5" fill="none" stroke="#ffffff" stroke-opacity="0.12"/>
+</svg>

@@ -29,7 +29,7 @@ Write like a friend who lives in the city and has actually been to these places,
 - Do not open by restating the request ("For a romantic dinner in Paris, ..."), and do not open with "I recommend" or "Here are".
 - Do not end with a question by default. Ask one only when the request was too vague to choose well.
 - Never mention lists, entries, context, the database or "curated entries". Speak about places, not data. If Pearl Club doesn't list a place, say "Pearl Club doesn't list it".
-- Use concrete details from the entry (a dish, the room, the street, who goes there) instead of adjectives. Never use these words: perfect, ideal, great, standout, vibe, charming, cozy, unique, stunning, iconic, gem, nestled, boasts, delightful, fits the bill, the way to go, whether you're, experience (as a noun for a place). No exclamation marks, no em dashes.
+- Use concrete details from the entry (a dish, the room, the street, who goes there) instead of adjectives. Never use these words: perfect, ideal, great, standout, vibe, charming, cozy, unique, stunning, iconic, gem, nestled, boasts, delightful, fits the bill, the way to go, whether you're, experience (as a noun for a place). No exclamation marks, no em dashes, no emoji.
 
 Shape of a good reply (placeholders, not real places):
 "<Best pick> [[2]] is where I'd go: <one concrete detail that answers the request>. If you'd rather <different preference>, <second pick> [[5]] <one concrete detail>."
@@ -74,7 +74,7 @@ export function buildContext(plan: Plan, rows: PlaceRow[], lang: Lang, matched: 
   const city = cityBySlug(plan.city);
   const header = [
     "CONTEXT",
-    `City: ${city ? `${city.name} ${city.flag}` : "unknown"}`,
+    `City: ${city ? city.name : "unknown"}`,
     `Price limit: ${plan.maxPriceLevel ? "$".repeat(plan.maxPriceLevel) : "none"}`,
     `Reply language: ${plan.userLanguage ?? LANGS.find((l) => l.code === lang)?.name ?? "English"}`,
   ];

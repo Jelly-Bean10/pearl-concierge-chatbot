@@ -139,7 +139,7 @@ export default function RequestForm({ t, prefill, onLogged, onCancel }: Props) {
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium text-ink">{f.place}</p>
           <p className="rounded-md bg-mist px-3 py-2.5 text-base text-ink">
-            {prefill.place?.countryFlag} {prefill.place?.name} · {prefill.place?.cityName}
+            {prefill.place?.name} · {prefill.place?.cityName}
           </p>
         </div>
       ) : (
@@ -173,7 +173,7 @@ export default function RequestForm({ t, prefill, onLogged, onCancel }: Props) {
               <option value="">{f.pickCity}</option>
               {CITIES.map((c) => (
                 <option key={c.slug} value={c.slug}>
-                  {c.flag} {c.name}
+                  {c.name}
                 </option>
               ))}
             </select>,

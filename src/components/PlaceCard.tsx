@@ -31,7 +31,7 @@ export default function PlaceCard({ place, domId, t, onRequest }: Props) {
           </span>
         )}
         {place.priceRange && (
-          <span className="absolute end-2 top-2 rounded-md bg-paper/90 px-1.5 py-0.5 font-mono text-[11px] font-bold text-ink">
+          <span className="absolute end-2 top-2 rounded-md bg-paper/90 px-1.5 py-0.5 font-mono text-[11px] text-ink">
             {place.priceRange}
           </span>
         )}
@@ -39,7 +39,7 @@ export default function PlaceCard({ place, domId, t, onRequest }: Props) {
 
       <div className="flex flex-1 flex-col gap-2 p-3.5">
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-          {place.countryFlag} {t.categories[place.categorySlug] ?? place.categoryLabel} · {place.cityName}
+          {t.categories[place.categorySlug] ?? place.categoryLabel} · {place.cityName}
         </p>
         <h3 className="font-display text-[22px] font-semibold leading-[26px] text-ink">
           <a href={place.url} {...external} className="hover:underline hover:decoration-1 hover:underline-offset-4">

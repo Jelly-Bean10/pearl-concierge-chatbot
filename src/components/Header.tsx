@@ -16,7 +16,10 @@ export default function Header({ t, lang, onLang, city, onCity, onReset }: Props
     <header className="sticky top-0 z-10 border-b border-line bg-paper/95 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-[720px] items-center justify-between gap-3 px-4 sm:px-6">
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="font-display text-[22px] font-semibold leading-none text-ink">Pearl Club</span>
+          {/* The wordmark stays in Cormorant in every language, including Urdu. */}
+          <span className="font-[family-name:var(--font-cormorant)] text-[22px] font-semibold leading-none text-ink">
+            Pearl Club
+          </span>
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.08em] text-muted sm:inline">
             {t.concierge}
           </span>
@@ -61,8 +64,7 @@ export default function Header({ t, lang, onLang, city, onCity, onReset }: Props
       </div>
       <div className="pearl-gradient h-[3px]" aria-hidden />
       <nav aria-label={t.city} className="mx-auto w-full max-w-[720px]">
-        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 py-2.5 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] sm:px-6">
-          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">{t.city}</span>
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 py-2.5 [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-40px),transparent)] rtl:[mask-image:linear-gradient(to_left,transparent,black_16px,black_calc(100%-40px),transparent)] sm:px-6">
           {CITIES.map((c) => {
             const active = c.slug === city;
             return (
@@ -71,11 +73,10 @@ export default function Header({ t, lang, onLang, city, onCity, onReset }: Props
                 type="button"
                 aria-pressed={active}
                 onClick={() => onCity(active ? null : c.slug)}
-                className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors ${
+                className={`inline-flex h-10 shrink-0 items-center rounded-full border px-3.5 text-sm font-medium transition-colors ${
                   active ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink hover:border-ink"
                 }`}
               >
-                <span aria-hidden>{c.flag}</span>
                 {c.name}
               </button>
             );

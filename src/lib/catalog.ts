@@ -1,19 +1,19 @@
 import type { CitySlug } from "./types";
 
 // The cities loaded into the database. Must match CITIES in scraper/scrape.py.
-export const CITIES: { slug: CitySlug; name: string; flag: string }[] = [
-  { slug: "new-york-city", name: "New York City", flag: "🇺🇸" },
-  { slug: "london", name: "London", flag: "🇬🇧" },
-  { slug: "paris", name: "Paris", flag: "🇫🇷" },
-  { slug: "los-angeles", name: "Los Angeles", flag: "🇺🇸" },
-  { slug: "berlin", name: "Berlin", flag: "🇩🇪" },
-  { slug: "san-francisco", name: "San Francisco", flag: "🇺🇸" },
-  { slug: "austin", name: "Austin", flag: "🇺🇸" },
-  { slug: "barcelona", name: "Barcelona", flag: "🇪🇸" },
-  { slug: "amsterdam", name: "Amsterdam", flag: "🇳🇱" },
-  { slug: "lisbon", name: "Lisbon", flag: "🇵🇹" },
-  { slug: "tokyo", name: "Tokyo", flag: "🇯🇵" },
-  { slug: "miami", name: "Miami", flag: "🇺🇸" },
+export const CITIES: { slug: CitySlug; name: string }[] = [
+  { slug: "new-york-city", name: "New York City" },
+  { slug: "london", name: "London" },
+  { slug: "paris", name: "Paris" },
+  { slug: "los-angeles", name: "Los Angeles" },
+  { slug: "berlin", name: "Berlin" },
+  { slug: "san-francisco", name: "San Francisco" },
+  { slug: "austin", name: "Austin" },
+  { slug: "barcelona", name: "Barcelona" },
+  { slug: "amsterdam", name: "Amsterdam" },
+  { slug: "lisbon", name: "Lisbon" },
+  { slug: "tokyo", name: "Tokyo" },
+  { slug: "miami", name: "Miami" },
 ];
 
 export const CITY_SLUGS = CITIES.map((c) => c.slug);
