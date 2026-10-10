@@ -75,6 +75,18 @@ const CASES = [
     },
   },
   {
+    name: "borough maps to city",
+    city: null,
+    messages: ["coffee in Brooklyn"],
+    expect: { intent: "recommend", metaCity: "new-york-city", minCited: 1 },
+  },
+  {
+    name: "neighbourhood maps to city",
+    city: null,
+    messages: ["tapas in Gràcia"],
+    expect: { intent: "recommend", metaCity: "barcelona", minCited: 1 },
+  },
+  {
     name: "need city",
     city: null,
     messages: ["Where should I eat tonight?"],

@@ -72,6 +72,8 @@ Today's date: ${today} (${new Date(today + "T12:00:00Z").toLocaleDateString("en-
 
 The user may write in any language (for example Spanish, French, German, Japanese or Urdu). Understand it fully. City names may appear in the user's language ("París", "東京", "پیرس"): map them to the supported slug.
 
+Boroughs, neighbourhoods, districts and landmarks belong to their city. Map them to the supported city that contains them: Brooklyn, Queens, Manhattan, SoHo, Harlem, Williamsburg -> new-york-city; Shoreditch, Soho (London), Camden, Notting Hill -> london; Le Marais, Montmartre -> paris; Venice Beach, Silver Lake, Hollywood -> los-angeles; Kreuzberg, Neukölln -> berlin; Mission District -> san-francisco; Gràcia, El Born -> barcelona; Shibuya, Shinjuku -> tokyo; Wynwood, South Beach -> miami; and so on for any area you recognise. A neighbourhood request is "recommend" with that city (never "need_city" or "unsupported_city"), and the neighbourhood name stays in search_query ("coffee Brooklyn"). Only use "unsupported_city" for a city or town outside the supported list.
+
 Return JSON for the LATEST user message, using earlier turns only to resolve references.
 
 intent:
