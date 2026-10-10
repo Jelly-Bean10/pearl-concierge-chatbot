@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { citedRefs, stripMarkers } from "@/lib/citations";
+import { LANGS, t as dict } from "@/lib/i18n";
 import { readEvents } from "@/lib/read-stream";
-import type { ChatTurn, CitySlug, ErrorEnvelope, Intent, PlaceCard } from "@/lib/types";
+import { useLang } from "@/lib/use-lang";
+import type { ChatTurn, CitySlug, ErrorCode, ErrorEnvelope, Intent, PlaceCard } from "@/lib/types";
 import AssistantMessage from "./AssistantMessage";
 import Composer from "./Composer";
 import Header from "./Header";
@@ -18,10 +20,8 @@ export interface UIMessage {
   places: PlaceCard[];
   citedRefs: number[];
   suggestions: string[];
-  error?: string;
+  error?: ErrorCode | "network";
 }
-
-const NETWORK_ERROR = "Couldn't reach Pearl. Check your connection and try again.";
 
 function newId() {
   return Math.random().toString(36).slice(2);
@@ -42,9 +42,16 @@ function toHistory(messages: UIMessage[]): ChatTurn[] {
 export default function Chat() {
   const [messages, setMessages] = useState<UIMessage[]>([]);
   const [city, setCity] = useState<CitySlug | null>(null);
+  const [lang, changeLang] = useLang();
   const [busy, setBusy] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
+
+  // Mirror language and direction on <html> so fonts, hyphenation and RTL layout follow.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = LANGS.find((l) => l.code === lang)?.rtl ? "rtl" : "ltr";
+  }, [lang]);
 
   // Keep the newest content in view unless the user has scrolled up to read.
   useEffect(() => {
@@ -90,11 +97,11 @@ export default function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: toHistory([...base, user]), city, shownPlaceIds: shownPlaceIds(base) }),
+        body: JSON.stringify({ messages: toHistory([...base, user]), city, shownPlaceIds: shownPlaceIds(base), lang }),
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as ErrorEnvelope | null;
-        patch(reply.id, () => ({ status: "error", error: body?.error.message ?? NETWORK_ERROR }));
+        patch(reply.id, () => ({ status: "error", error: body?.error.code ?? "network" }));
         return;
       }
       for await (const event of readEvents(res)) {
@@ -111,11 +118,11 @@ export default function Chat() {
         } else if (event.type === "done") {
           patch(reply.id, () => ({ status: "done", citedRefs: event.citedRefs, suggestions: event.suggestions }));
         } else if (event.type === "error") {
-          patch(reply.id, () => ({ status: "error", error: event.message }));
+          patch(reply.id, () => ({ status: "error", error: event.code }));
         }
       }
     } catch {
-      patch(reply.id, () => ({ status: "error", error: NETWORK_ERROR }));
+      patch(reply.id, () => ({ status: "error", error: "network" }));
     } finally {
       setBusy(false);
     }
@@ -136,15 +143,23 @@ export default function Chat() {
   }
 
   const last = messages[messages.length - 1];
+  const t = dict(lang);
 
   return (
     <div className="flex h-dvh flex-col">
-      <Header city={city} onCity={setCity} onReset={messages.length > 0 ? reset : undefined} />
+      <Header
+        t={t}
+        lang={lang}
+        onLang={changeLang}
+        city={city}
+        onCity={setCity}
+        onReset={messages.length > 0 ? reset : undefined}
+      />
 
       <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-[720px] flex-col gap-6 px-4 py-6 sm:px-6">
           {messages.length === 0 ? (
-            <Welcome city={city} onPick={(t) => void send(t)} />
+            <Welcome t={t} city={city} onPick={(text) => void send(text)} />
           ) : (
             messages.map((m) =>
               m.role === "user" ? (
@@ -156,10 +171,11 @@ export default function Chat() {
               ) : (
                 <AssistantMessage
                   key={m.id}
+                  t={t}
                   message={m}
                   isLast={m.id === last?.id}
                   busy={busy}
-                  onSuggestion={(t) => void send(t)}
+                  onSuggestion={(text) => void send(text)}
                   onRetry={() => retry(m.id)}
                 />
               ),
@@ -168,7 +184,7 @@ export default function Chat() {
         </div>
       </div>
 
-      <Composer busy={busy} onSend={(t) => void send(t)} />
+      <Composer t={t} busy={busy} onSend={(text) => void send(text)} />
     </div>
   );
 }

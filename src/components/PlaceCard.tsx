@@ -1,8 +1,9 @@
+import type { Dict } from "@/lib/i18n";
 import type { PlaceCard as Place } from "@/lib/types";
 
 const external = { target: "_blank", rel: "noopener noreferrer" } as const;
 
-export default function PlaceCard({ place, domId }: { place: Place; domId: string }) {
+export default function PlaceCard({ place, domId, t }: { place: Place; domId: string; t: Dict }) {
   return (
     <article
       id={domId}
@@ -18,11 +19,11 @@ export default function PlaceCard({ place, domId }: { place: Place; domId: strin
             {place.name[0]}
           </span>
         )}
-        <span className="absolute left-2 top-2 rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] text-paper">
+        <span className="absolute start-2 top-2 rounded-full bg-ink px-2 py-0.5 font-mono text-[11px] text-paper">
           {String(place.ref).padStart(2, "0")}
         </span>
         {place.priceRange && (
-          <span className="absolute right-2 top-2 rounded-md bg-paper/90 px-1.5 py-0.5 font-mono text-[11px] font-bold text-ink">
+          <span className="absolute end-2 top-2 rounded-md bg-paper/90 px-1.5 py-0.5 font-mono text-[11px] font-bold text-ink">
             {place.priceRange}
           </span>
         )}
@@ -30,7 +31,7 @@ export default function PlaceCard({ place, domId }: { place: Place; domId: strin
 
       <div className="flex flex-1 flex-col gap-2 p-3">
         <p className="font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
-          {place.countryFlag} {place.categoryLabel} · {place.cityName}
+          {place.countryFlag} {t.categories[place.categorySlug] ?? place.categoryLabel} · {place.cityName}
         </p>
         <h3 className="font-display text-[22px] font-semibold leading-[26px] text-ink">
           <a href={place.url} {...external} className="hover:underline">
@@ -53,18 +54,18 @@ export default function PlaceCard({ place, domId }: { place: Place; domId: strin
             {...external}
             className="flex h-10 items-center justify-center rounded-md bg-ink font-mono text-xs uppercase tracking-[0.08em] text-paper transition-colors hover:bg-ink-soft"
           >
-            View on Pearl Club →
+            {t.viewOnPearl} →
           </a>
           {(place.websiteUrl || place.mapUrl) && (
             <div className="flex justify-center gap-5 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">
               {place.websiteUrl && (
                 <a href={place.websiteUrl} {...external} className="hover:text-ink">
-                  Website ↗
+                  {t.website} ↗
                 </a>
               )}
               {place.mapUrl && (
                 <a href={place.mapUrl} {...external} className="hover:text-ink">
-                  Map ↗
+                  {t.map} ↗
                 </a>
               )}
             </div>

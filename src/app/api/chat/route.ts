@@ -48,7 +48,7 @@ export async function POST(req: Request): Promise<Response> {
   }
   const parsed = parseChatRequest(body);
   if (!parsed.ok) return jsonError(400, "bad_request", parsed.error);
-  const { messages, city, shownPlaceIds } = parsed.value;
+  const { messages, city, shownPlaceIds, lang } = parsed.value;
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -75,7 +75,7 @@ export async function POST(req: Request): Promise<Response> {
             max_completion_tokens: 500,
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
-              { role: "system", content: buildContext(plan, rows) },
+              { role: "system", content: buildContext(plan, rows, lang) },
               ...messages.slice(-10),
             ],
           },
@@ -93,7 +93,7 @@ export async function POST(req: Request): Promise<Response> {
         // 4. Report which candidates were actually cited, plus follow-up chips.
         const refs = citedRefs(fullText, cards.length);
         const cited = refs.map((ref) => cards[ref - 1]);
-        send({ type: "done", citedRefs: refs, suggestions: buildSuggestions(plan, cited) });
+        send({ type: "done", citedRefs: refs, suggestions: buildSuggestions(plan, cited, lang) });
         console.log(
           JSON.stringify({
             event: "turn_done",

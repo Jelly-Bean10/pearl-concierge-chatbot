@@ -1,5 +1,7 @@
 // Shared types for the chat API (server) and the chat UI (client).
 
+import type { Lang } from "./i18n";
+
 export type CitySlug =
   | "new-york-city"
   | "london"
@@ -26,6 +28,7 @@ export interface ChatTurn {
 export interface ChatRequest {
   messages: ChatTurn[]; // oldest first, last item must be the new user message
   city: CitySlug | null; // city chip currently selected in the UI
+  lang: Lang; // UI language selected by the user
   shownPlaceIds: number[]; // ids of places already shown as cards in this session (most recent last)
 }
 

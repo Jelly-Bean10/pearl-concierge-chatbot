@@ -1,5 +1,6 @@
 import "server-only";
 import { CITIES, cityBySlug } from "./catalog";
+import { LANGS, type Lang } from "./i18n";
 import type { Plan } from "./planner";
 import { truncate, type PlaceRow } from "./retrieve";
 
@@ -26,7 +27,7 @@ STYLE
 - Keep answers under 120 words unless the user asks for detail about a single place.
 - For each pick, one sentence on why it suits this user, drawn from its entry.
 - End with one short question that helps narrow the next suggestion (mood, budget, time of day, who they are with).
-- Reply in the language the user writes in. Keep place names exactly as written in the list.
+- Reply in the language named on the "Reply language" line of the CONTEXT message (it is the language the user is writing in, or their app language when that is unclear). Keep place names exactly as written in the list; never translate or transliterate them. Facts from place entries may be paraphrased in the reply language, but never add facts that are not in the entry.
 
 BOOKING
 You cannot book, reserve, or check availability. If the user wants to book, recommend from the list and say each card links to the venue's own website and its Pearl Club page. Never claim that anything was booked.
@@ -57,12 +58,13 @@ function formatPlace(row: PlaceRow, ref: number): string {
 }
 
 /** Second system message: what the planner understood plus the only places the model may mention. */
-export function buildContext(plan: Plan, rows: PlaceRow[]): string {
+export function buildContext(plan: Plan, rows: PlaceRow[], lang: Lang): string {
   const city = cityBySlug(plan.city);
   const header = [
     "CONTEXT",
     `City: ${city ? `${city.name} ${city.flag}` : "unknown"}`,
     `Price limit: ${plan.maxPriceLevel ? "$".repeat(plan.maxPriceLevel) : "none"}`,
+    `Reply language: ${plan.userLanguage ?? LANGS.find((l) => l.code === lang)?.name ?? "English"}`,
   ];
   if (plan.intent !== "recommend") {
     return [...header, `INSTRUCTION: ${INSTRUCTIONS[plan.intent](plan)}`, "PLACES: (none)"].join("\n");

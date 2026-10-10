@@ -1,8 +1,10 @@
 import { toSegments } from "@/lib/citations";
+import type { Dict } from "@/lib/i18n";
 import type { UIMessage } from "./Chat";
 import PlaceCard from "./PlaceCard";
 
 interface Props {
+  t: Dict;
   message: UIMessage;
   isLast: boolean;
   busy: boolean;
@@ -10,7 +12,7 @@ interface Props {
   onRetry: () => void;
 }
 
-export default function AssistantMessage({ message, isLast, busy, onSuggestion, onRetry }: Props) {
+export default function AssistantMessage({ t, message, isLast, busy, onSuggestion, onRetry }: Props) {
   const validRefs = new Set(message.places.map((p) => p.ref));
   const cited = message.citedRefs.map((ref) => message.places[ref - 1]).filter(Boolean);
 
@@ -35,7 +37,7 @@ export default function AssistantMessage({ message, isLast, busy, onSuggestion, 
               />
             ))}
           </span>
-          {message.intent === "recommend" ? "Searching Pearl Club's guides…" : "Thinking…"}
+          {message.intent === "recommend" ? t.searching : t.thinking}
         </div>
       )}
 
@@ -62,14 +64,14 @@ export default function AssistantMessage({ message, isLast, busy, onSuggestion, 
       {cited.length > 0 && (
         <div className="no-scrollbar -mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:scroll-px-6 sm:px-6">
           {cited.map((place) => (
-            <PlaceCard key={place.id} place={place} domId={`card-${message.id}-${place.ref}`} />
+            <PlaceCard key={place.id} place={place} domId={`card-${message.id}-${place.ref}`} t={t} />
           ))}
         </div>
       )}
 
       {message.status === "error" && (
         <div className="rounded-lg border-l-4 border-danger bg-danger-bg px-4 py-3 text-sm text-danger" role="alert">
-          <p>{message.error}</p>
+          <p>{message.error ? t.errors[message.error] : ""}</p>
           {isLast && (
             <button
               type="button"
@@ -77,7 +79,7 @@ export default function AssistantMessage({ message, isLast, busy, onSuggestion, 
               disabled={busy}
               className="mt-1 font-medium underline underline-offset-2"
             >
-              Try again
+              {t.retry}
             </button>
           )}
         </div>

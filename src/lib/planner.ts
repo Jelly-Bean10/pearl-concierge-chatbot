@@ -11,6 +11,7 @@ export interface Plan {
   categories: string[];
   maxPriceLevel: number | null;
   wantsNewOptions: boolean;
+  userLanguage: string | null; // English name of the language the latest user message is written in
 }
 
 const PLANNER_TIMEOUT_MS = 8_000;
@@ -18,7 +19,16 @@ const PLANNER_TIMEOUT_MS = 8_000;
 const PLAN_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["intent", "search_query", "city", "mentioned_city", "categories", "max_price_level", "wants_new_options"],
+  required: [
+    "intent",
+    "search_query",
+    "city",
+    "mentioned_city",
+    "categories",
+    "max_price_level",
+    "wants_new_options",
+    "user_language",
+  ],
   properties: {
     intent: {
       type: "string",
@@ -30,6 +40,7 @@ const PLAN_SCHEMA = {
     categories: { type: "array", items: { type: "string", enum: CATEGORY_SLUGS } },
     max_price_level: { anyOf: [{ type: "integer", enum: [1, 2, 3] }, { type: "null" }] },
     wants_new_options: { type: "boolean" },
+    user_language: { anyOf: [{ type: "string" }, { type: "null" }] },
   },
 } as const;
 
@@ -41,6 +52,8 @@ Supported cities: ${cities}.
 Place categories: ${CATEGORY_SLUGS.join(", ")}.
 City currently selected in the app: ${selectedCity ?? "none"}.
 
+The user may write in any language (for example Spanish, French, German, Japanese or Urdu). Understand it fully. City names may appear in the user's language ("París", "東京", "پیرس"): map them to the supported slug.
+
 Return JSON for the LATEST user message, using earlier turns only to resolve references.
 
 intent:
@@ -50,7 +63,7 @@ intent:
 - "smalltalk": greetings, thanks, or questions about what Pearl can do.
 - "off_topic": anything unrelated to travel, places, or plans.
 
-search_query: for "recommend" only, a short standalone search phrase describing what to find. Resolve references from earlier turns ("something cheaper" after dinner suggestions becomes "affordable casual dinner restaurant"; "tell me more about the second one" becomes that place's name). Include cuisine, mood, vibe, occasion, and audience words. Never include the city name. Empty string for every other intent.
+search_query: for "recommend" only, a short standalone search phrase describing what to find. ALWAYS write it in English, translating from whatever language the user wrote in (the place database is English). Keep proper nouns such as place and neighbourhood names unchanged. Resolve references from earlier turns ("something cheaper" after dinner suggestions becomes "affordable casual dinner restaurant"; "tell me more about the second one" becomes that place's name). Include cuisine, mood, vibe, occasion, and audience words. Never include the city name. Empty string for every other intent.
 
 city: the supported city slug this request is about. Priority: a city named in the latest message, then the city of the ongoing conversation, then the selected city. null if none applies. If the latest message names an unsupported city, city is null.
 
@@ -60,6 +73,8 @@ categories: 0 to 4 category slugs that clearly match. Use an empty array for bro
 Hints: eat/restaurant/dinner -> dinner, lunch. brunch/breakfast -> breakfast, cafes. coffee/work from -> cafes, workspaces. pastry/bread -> bakeries. drinks/cocktails/wine/beer -> bars, outdoor-drinks. dancing/club -> nightlife, live-entertainment. museum/gallery/art -> arts-and-culture. landmarks/sights -> sightseeing. book an experience/things to do/activity -> activities, arts-and-culture, sightseeing, live-entertainment. hotel/where to stay -> stays. park/nature/outdoors -> parks-and-nature. shops/shopping -> shopping, markets. day trip/weekend away -> weekend-trips. kids/family -> kid-friendly.
 
 max_price_level: 1 for cheap/budget/inexpensive, 2 for "cheaper", "not too expensive", or moderate, 3 for "nice but not crazy", otherwise null.
+
+user_language: the English name of the language the LATEST user message is written in ("English", "Spanish", "Japanese", ...). null when the message is too short or ambiguous to tell (a single place name, a number, an emoji).
 
 wants_new_options: true when the user asks for more, other, or different options than those already suggested; otherwise false.`;
 }
@@ -74,6 +89,7 @@ function fallbackPlan(lastUserMessage: string, selectedCity: CitySlug | null): P
     categories: [],
     maxPriceLevel: null,
     wantsNewOptions: false,
+    userLanguage: null,
   };
 }
 
@@ -102,6 +118,7 @@ export async function planTurn(messages: ChatTurn[], selectedCity: CitySlug | nu
       categories: Array.isArray(raw.categories) ? raw.categories.filter((c: string) => CATEGORY_SLUGS.includes(c)) : [],
       maxPriceLevel: typeof raw.max_price_level === "number" ? raw.max_price_level : null,
       wantsNewOptions: Boolean(raw.wants_new_options),
+      userLanguage: typeof raw.user_language === "string" ? raw.user_language.trim() || null : null,
     };
     // A recommendation needs a city. Never search without one.
     if (plan.intent === "recommend" && !plan.city) plan.intent = "need_city";

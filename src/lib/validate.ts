@@ -1,4 +1,5 @@
 import { CITY_SLUGS } from "./catalog";
+import { parseLang } from "./i18n";
 import type { ChatRequest, ChatTurn, CitySlug } from "./types";
 
 export const MAX_USER_MESSAGE_CHARS = 500;
@@ -10,7 +11,7 @@ type Result = { ok: true; value: ChatRequest } | { ok: false; error: string };
 /** Hand-rolled validation for a three-field body. Trims history; rejects anything malformed. */
 export function parseChatRequest(body: unknown): Result {
   if (typeof body !== "object" || body === null) return { ok: false, error: "Body must be a JSON object." };
-  const { messages, city, shownPlaceIds } = body as Record<string, unknown>;
+  const { messages, city, shownPlaceIds, lang } = body as Record<string, unknown>;
 
   if (!Array.isArray(messages) || messages.length === 0) {
     return { ok: false, error: "messages must be a non-empty array." };
@@ -42,6 +43,11 @@ export function parseChatRequest(body: unknown): Result {
 
   return {
     ok: true,
-    value: { messages: turns.slice(-MAX_TURNS_KEPT), city: (city as CitySlug) ?? null, shownPlaceIds: ids as number[] },
+    value: {
+      messages: turns.slice(-MAX_TURNS_KEPT),
+      city: (city as CitySlug) ?? null,
+      shownPlaceIds: ids as number[],
+      lang: parseLang(lang),
+    },
   };
 }
