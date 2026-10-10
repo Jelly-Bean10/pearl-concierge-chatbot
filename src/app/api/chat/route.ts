@@ -128,8 +128,8 @@ export async function POST(req: Request): Promise<Response> {
         );
         let fullText = "";
         for await (const chunk of completion) {
-          // The prompt bans em dashes; this catches the ones that slip through.
-          const text = chunk.choices[0]?.delta?.content?.replace(/\s*—\s*/g, ", ");
+          // The prompt bans em dashes; this catches the ones that slip through, and spaced en dashes used the same way.
+          const text = chunk.choices[0]?.delta?.content?.replace(/\s*—\s*|\s+–\s+/g, ", ");
           if (text) {
             fullText += text;
             send({ type: "delta", text });
