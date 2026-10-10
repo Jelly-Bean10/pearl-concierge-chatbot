@@ -27,7 +27,7 @@ export default function Header({ city, onCity, onReset }: Props) {
       </div>
       <div className="pearl-gradient h-[3px]" aria-hidden />
       <nav aria-label="City" className="mx-auto w-full max-w-[720px]">
-        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 py-2.5 sm:px-6">
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 py-2.5 [mask-image:linear-gradient(to_right,black_calc(100%-40px),transparent)] sm:px-6">
           <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.08em] text-muted">City</span>
           {CITIES.map((c) => {
             const active = c.slug === city;

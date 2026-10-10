@@ -1,6 +1,18 @@
 // Shared types for the chat API (server) and the chat UI (client).
 
-export type CitySlug = "new-york-city" | "london" | "paris" | "los-angeles";
+export type CitySlug =
+  | "new-york-city"
+  | "london"
+  | "paris"
+  | "los-angeles"
+  | "berlin"
+  | "san-francisco"
+  | "austin"
+  | "barcelona"
+  | "amsterdam"
+  | "lisbon"
+  | "tokyo"
+  | "miami";
 
 export type Role = "user" | "assistant";
 
